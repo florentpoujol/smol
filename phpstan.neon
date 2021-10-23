@@ -1,0 +1,10 @@
+# to clear the result cache, run 'vendor/bin/phpstan clear-result-cache'
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: 8
+
+    paths:
+        - src
+        - tests
