@@ -15,6 +15,7 @@ return (new PhpCsFixer\Config())
 
         'concat_space' => ['spacing' => 'one'],
         'declare_strict_types' => true,
+        'native_function_invocation' => ['include' => [], 'strict' => true], // prevent leading slashes on PHP function calls
         'no_superfluous_elseif' => true,
         'not_operator_with_successor_space' => true,
         'php_unit_method_casing' => ['case' => 'snake_case'],
