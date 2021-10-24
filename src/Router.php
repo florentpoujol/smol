@@ -51,6 +51,10 @@ final class Router
             // even if there is a single route, it does not mean it match
             foreach ($routes as $route) {
                 if ($route->match($uri)) {
+                    if ($route->isRedirect()) {
+                        $this->redirect($route);
+                    }
+
                     return $route;
                 }
             }
@@ -84,5 +88,24 @@ final class Router
         foreach ($this->routes as &$routesByPrefix) { // /!\ REFERENCE
             krsort($routesByPrefix); // sort alphabetically in reverse order, so that the longest prefixes are first
         }
+    }
+
+    /**
+     * @return never-return
+     */
+    private function redirect(Route $route): void
+    {
+        $action = $route->getAction();
+        /** @var string $action */
+
+        http_response_code(302);
+        if (str_starts_with($action, 'redirect-permanent:')) {
+            http_response_code(301);
+        }
+
+        $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
+        header("Location: $location");
+
+        exit(0);
     }
 }

@@ -131,4 +131,9 @@ final class Route
     {
         return $this->actionArguments;
     }
+
+    public function isRedirect(): bool
+    {
+        return is_string($this->action) && str_starts_with($this->action, 'redirect');
+    }
 }
