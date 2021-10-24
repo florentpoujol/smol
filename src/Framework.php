@@ -18,6 +18,8 @@ final class Framework
     public function __construct(string $baseDirectory)
     {
         $this->baseDirectory = $baseDirectory;
+
+        $this->init();
     }
 
     /** @var class-string<\FlorentPoujol\SimplePhpFramework\Container> */
@@ -34,6 +36,11 @@ final class Framework
         return $this;
     }
 
+    public function getContainer(): Container
+    {
+        return $this->container;
+    }
+
     private function init(): void
     {
         $this->container = new $this->containerFqcn();
@@ -42,9 +49,11 @@ final class Framework
 
     public function handleHttpRequest(): void
     {
-        $route = (new Router())->resolveRoute();
+        $route = $this->container->get(Router::class)->resolveRoute();
         if ($route === null) {
             http_response_code(404);
+
+            echo $_SERVER['REQUEST_URI'] . ' not found';
 
             exit(0);
         }
@@ -70,6 +79,7 @@ final class Framework
             }
         }
 
+        $response->getBody()->rewind();
         echo $response->getBody()->getContents();
 
         exit(0);
