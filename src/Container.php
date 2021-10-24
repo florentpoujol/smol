@@ -57,8 +57,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string                          $serviceName
-     * @param callable|string|array<string|object, string> $factory     Instance factory, service alias, or constructor arguments
+     * @param string|class-string                              $serviceName
+     * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
     {

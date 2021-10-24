@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
-use Nyholm\Psr7\Response;
-
 final class Route
 {
     /** @var array<string> */
@@ -14,11 +12,11 @@ final class Route
     /** @var string Always with a leading slash, never with a trailing slash */
     private string $uri;
     private ?string $regexUri = null;
-    /** @var array<string> */
-    private array $placeholderNames = [];
 
     /** @var callable|string */
     private string|array|object $action; // @phpstan-ignore-line
+    /** @var array<string, string> */
+    private array $actionArguments = [];
 
     /**
      * @param array<string>|string  $methods            Http method(s)
@@ -69,6 +67,9 @@ final class Route
 
     private function buildRegexUri(): void
     {
+        if ($this->regexUri !== null) {
+            return;
+        }
         // turn a route like "/docs/{page}" with page [a-z-]+
         // into "/docs/([a-z-]+)"
 
@@ -77,13 +78,15 @@ final class Route
 
         $uriSegments = explode('/', $this->uri);
         foreach ($uriSegments as $segment) {
-            $param = str_replace(['{', '}'], '', $segment);
-            $this->placeholderNames[] = $param;
-
-            if (str_starts_with($segment, '{') && ! in_array($segment, $placeholders, true)) {
-                $placeholders[] = $segment;
-                $regexes[] = '(' . ($this->placeholderRegexes[$param] ?? '[^/]+') . ')';
+            if (! str_starts_with($segment, '{')) {
+                continue;
             }
+
+            $placeholderName = str_replace(['{', '}'], '', $segment);
+
+            $placeholders[] = $segment;
+            $regex = $this->placeholderRegexes[$placeholderName] ?? '[^/]+';
+            $regexes[] = "(?<$placeholderName>$regex)"; // this is a named capturing group
         }
 
         $this->regexUri = str_replace($placeholders, $regexes, $this->uri);
@@ -103,92 +106,29 @@ final class Route
 
         $this->buildRegexUri();
 
-        return preg_match('~^' . $this->regexUri . '$~', $actualUri) === 1;
-    }
-
-    public function getParamsFromUri(): array
-    {
-        if (! str_contains($this->uri, '{')) {
-            return [];
-        }
-
-        $this->buildRegexUri();
-
         $matches = [];
-        if (preg_match('~^' . $this->regexUri . '$~', $this->uri, $matches) !== 1) {
-            return [];
+        $match = preg_match('~^' . $this->regexUri . '$~', $actualUri, $matches) === 1;
+        if (! $match) {
+            return false;
         }
 
-        array_shift($matches); // remove the whole match, to leave capturing group matches
-        $assocMatches = [];
-
-        foreach ($this->placeholderNames as $id => $name) {
-            if (! isset($matches[$id]) || $matches[$id] === '') {
-                // if the uri miss some optional placeholders
-                // their captured value is empty string
-                break;
+        // remove integer keys
+        foreach ($matches as $key => $value) {
+            if (is_int($key)) {
+                unset($matches[$key]);
             }
-
-            $assocMatches[$name] = $matches[$id];
         }
 
-        return $assocMatches;
+        $this->actionArguments = $matches;
+
+        return true;
     }
 
-    public function callControllerAction(): Response
+    /**
+     * @return array<string, string>
+     */
+    public function getActionArguments(): array
     {
-        return call_user_func($this->action, ...$this->getParamsFromUri());
+        return $this->actionArguments;
     }
-
-    // public function callControllerAction(): ResponseInterface
-    // {
-    //     // get the parameters list based on the callable type
-    //     /** @var callable $callable */
-    //     $callable = $this->action;
-    //
-    //     $rFunc = null;
-    //     if (is_string($callable)) {
-    //         if (function_exists($callable)) {
-    //             $rFunc = new \ReflectionFunction($callable);
-    //         } elseif (str_contains($callable, '::')) {
-    //             // Class::staticMethod
-    //             $parts = explode('::', $callable);
-    //             $rFunc = new ReflectionMethod($parts[0], $parts[1]);
-    //         }
-    //     } elseif (is_array($callable)) {
-    //         // ["class", "staticMethod"] [$object, "method"]
-    //         $rFunc = new ReflectionMethod($callable[0], $callable[1]);
-    //     } elseif (is_object($callable)) {
-    //         // invokable object or closure
-    //         $rFunc = new ReflectionMethod($callable, '__invoke');
-    //     }
-    //
-    //     $rParams = [];
-    //     if ($rFunc instanceof ReflectionFunctionAbstract) {
-    //         $rParams = $rFunc->getParameters();
-    //     }
-    //
-    //     // build the argument list
-    //     // this is needed because the callable's argument order
-    //     // may not be the same in the uri
-    //     $params = [];
-    //     $paramsFromUri = $this->getParamsFromUri($this->rawUri);
-    //     $paramDefaults = $this->getParamDefaults();
-    //     foreach ($rParams as $rParam) {
-    //         $name = $rParam->getName();
-    //
-    //         if (isset($paramsFromUri[$name])) {
-    //             $params[] = $paramsFromUri[$name];
-    //         } elseif (isset($paramDefaults[$name])) {
-    //             $params[] = $paramDefaults[$name];
-    //         } else {
-    //             break;
-    //             // do not set it to null so that the arg isn't passed at all to the target
-    //             // and the callable applies the default value (hopefully) set in its signature
-    //         }
-    //     }
-    //
-    //     // finally, call the target
-    //     return $callable(...$params);
-    // }
 }

@@ -49,7 +49,12 @@ final class Framework
 
     public function handleHttpRequest(): void
     {
-        $route = $this->container->get(Router::class)->resolveRoute();
+        /** @var \FlorentPoujol\SimplePhpFramework\Router $router */
+        $router = $this->container->get(Router::class);
+        $router->setBaseAppPath($this->baseDirectory);
+
+        $route = $router->resolveRoute();
+
         if ($route === null) {
             http_response_code(404);
 
@@ -58,10 +63,27 @@ final class Framework
             exit(0);
         }
 
-        /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
-        $response = $route->callControllerAction();
+        $response = $this->callRouteAction($route);
 
         $this->sendResponseToClient($response);
+    }
+
+    private function callRouteAction(Route $route): ResponseInterface
+    {
+        /** @var callable|string $action A callable or an "at" string : "Controller@method" */
+        $action = $route->getAction();
+
+        if (! is_callable($action)) {
+            // "Controller@method"
+            /** @var class-string $fqcn */
+            [$fqcn, $method] = explode('@', $action, 2);
+            $action = [$this->container->get($fqcn), $method];
+        }
+
+        // @phpstan-ignore-next-line
+        return $action(
+            ...$route->getActionArguments() // this unpacks an assoc array and make use of named arguments to inject the proper value taken from the URI segments to the correct argument
+        );
     }
 
     /**

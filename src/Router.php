@@ -8,8 +8,15 @@ final class Router
 {
     private ?string $baseAppPath = null;
 
-    /** @var array<string, array<string, array<\FlorentPoujol\SimplePhpFramework\Route>>> Routes instances by HTTp methods and prefixes */
-    private array $routes = [];
+    /** @var array<string, array<string, array<\FlorentPoujol\SimplePhpFramework\Route>>> Routes instances by HTTP methods and prefixes */
+    private array $routes = [
+        // HTTP method => [
+        //     /prefix => [
+        //         route 1
+        //         route 2
+        //     ]
+        // ]
+    ];
 
     /** @var array<string, \FlorentPoujol\SimplePhpFramework\Route> */
     private array $routesByName = [];
@@ -30,7 +37,7 @@ final class Router
     {
         $this->collectRoutes();
 
-        $method = strtolower($_SERVER['REQUEST_METHOD']);
+        $method = strtoupper($_SERVER['REQUEST_METHOD']);
         if (! isset($this->routes[$method])) {
             // no routes
             return null;
@@ -70,7 +77,7 @@ final class Router
             $prefix = $uri;
             $firstPlaceholderPos = strpos($uri, '{');
             if (is_int($firstPlaceholderPos)) {
-                $prefix = substr($route->getUri(), 0, $firstPlaceholderPos - 1);
+                $prefix = substr($route->getUri(), 0, $firstPlaceholderPos);
             }
 
             foreach ($route->getMethods() as $method) {
@@ -78,7 +85,7 @@ final class Router
             }
         }
 
-        foreach ($this->routes as $method => &$routesByPrefix) { // /!\ REFERENCE
+        foreach ($this->routes as &$routesByPrefix) { // /!\ REFERENCE
             krsort($routesByPrefix); // sort alphabetically in reverse order, so that the longest prefixes are first
         }
     }
