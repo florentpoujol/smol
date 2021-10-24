@@ -8,16 +8,6 @@ final class Framework
 {
     public static function make(string $baseDirectory): self
     {
-        $cachePath = $baseDirectory . '.framework.cache.php';
-        if (file_exists($cachePath)) {
-            return unserialize(file_get_contents($cachePath), [
-                'allowed_classes' => [
-                    // FIXME Security : how to do that securely without specifying all the possible classes ?
-                    self::class,
-                ],
-            ]);
-        }
-
         return new self($baseDirectory);
     }
 
@@ -45,37 +35,37 @@ final class Framework
     private function init(): void
     {
         $this->container = new $this->containerFqcn();
-        $this->container->init();
+        // $this->container->init();
     }
 
     public function handleHttpRequest(): void
     {
-        $uri = $_REQUEST['REQUEST_URI'];
-
-        $router = new Router();
-        $route = $router->resolveRoute($uri);
-
-        if ($route === null) {
-            if ($router->throwOn404()) {
-                throw new HttpException;
-            }
-
-            http_response_code(404);
-
-            exit(0);
-        }
-
-        $this->init();
-
-        $serverRequest = $this->container->make(PsrServerRequest);
-
-        $response = $this->sendRequestThroughMiddleware($serverRequest);
-        if ($response === null) {
-            $response = $route->sendRequestToController($serverRequest);
-        }
-
-        $this->sendResponseThroughMiddleware($response);
-
-        $response->send();
+        // $uri = $_REQUEST['REQUEST_URI'];
+        //
+        // $router = new Router();
+        // $route = $router->resolveRoute($uri);
+        //
+        // if ($route === null) {
+        //     if ($router->throwOn404()) {
+        //         throw new HttpException();
+        //     }
+        //
+        //     http_response_code(404);
+        //
+        //     exit(0);
+        // }
+        //
+        // $this->init();
+        //
+        // $serverRequest = $this->container->make(PsrServerRequest);
+        //
+        // $response = $this->sendRequestThroughMiddleware($serverRequest);
+        // if ($response === null) {
+        //     $response = $route->sendRequestToController($serverRequest);
+        // }
+        //
+        // $this->sendResponseThroughMiddleware($response);
+        //
+        // $response->send();
     }
 }

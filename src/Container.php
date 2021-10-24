@@ -6,12 +6,17 @@ namespace FlorentPoujol\SimplePhpFramework;
 
 use Exception;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use UnexpectedValueException;
 
 final class Container implements ContainerInterface
 {
     /** @var array<string|class-string, callable|string|array> */
-    private array $factories = [];
+    private array $factories = [
+        ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
+        ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
+    ];
 
     /**
      * Values cached by get().
@@ -52,8 +57,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string   $serviceName
-     * @param callable|string|array $factory     Instance factory, service alias, or constructor arguments
+     * @param string|class-string                          $serviceName
+     * @param callable|string|array<string|object, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
     {
@@ -115,7 +120,7 @@ final class Container implements ContainerInterface
 
         if (is_array($value)) {
             // $serviceName is a concrete class name, $value is class constructor description
-            return $this->createObject($serviceName, $value);
+            return $this->createObject($serviceName, $value); // @phpstan-ignore-line
         }
 
         // $serviceName is a class name or alias to other service
@@ -168,7 +173,7 @@ final class Container implements ContainerInterface
             $type = $param->getType();
             if ($type !== null) {
                 $typeName = (string) $type;
-                $typeIsBuiltin = $type->isBuiltin();
+                $typeIsBuiltin = $type->isBuiltin(); // @phpstan-ignore-line (doesn't know isBuiltin() ?)
             }
 
             if (isset($manualArguments[$paramName])) {
