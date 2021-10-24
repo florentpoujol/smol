@@ -17,7 +17,8 @@ final class Framework
 
     public function __construct(string $baseDirectory)
     {
-        $this->baseDirectory = $baseDirectory;
+        $realpath = realpath($baseDirectory);
+        $this->baseDirectory = is_string($realpath) ? $realpath : $baseDirectory;
 
         $this->init();
     }
@@ -44,15 +45,14 @@ final class Framework
     private function init(): void
     {
         $this->container = new $this->containerFqcn();
-        $this->container->setFactory(Router::class, [$this->baseDirectory]);
+        $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseDirectory]);
+        $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseDirectory]);
     }
 
     public function handleHttpRequest(): void
     {
         /** @var \FlorentPoujol\SimplePhpFramework\Router $router */
         $router = $this->container->get(Router::class);
-        $router->setBaseAppPath($this->baseDirectory);
-
         $route = $router->resolveRoute();
 
         if ($route === null) {

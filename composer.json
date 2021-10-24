@@ -4,6 +4,7 @@
     "type": "project",
     "description": "A simple, bare-bones yet full featured PHP framework",
     "autoload": {
+        "files": ["src/helpers.php"],
         "psr-4" : {
             "FlorentPoujol\\SimplePhpFramework\\" : "src/"
         }

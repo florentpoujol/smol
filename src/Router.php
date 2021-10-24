@@ -6,8 +6,6 @@ namespace FlorentPoujol\SimplePhpFramework;
 
 final class Router
 {
-    private ?string $baseAppPath = null;
-
     /** @var array<string, array<string, array<\FlorentPoujol\SimplePhpFramework\Route>>> Routes instances by HTTP methods and prefixes */
     private array $routes = [
         // HTTP method => [
@@ -21,11 +19,9 @@ final class Router
     /** @var array<string, \FlorentPoujol\SimplePhpFramework\Route> */
     private array $routesByName = [];
 
-    public function setBaseAppPath(string $baseAppPath): self
-    {
-        $this->baseAppPath = $baseAppPath;
-
-        return $this;
+    public function __construct(
+        private string $baseAppPath
+    ) {
     }
 
     public function getRouteByName(string $name): ?Route
