@@ -6,51 +6,80 @@ namespace FlorentPoujol\SimplePhpFramework;
 
 final class Router
 {
-    /** @var array<string, array<\FlorentPoujol\SimplePhpFramework\Route>> [http method => [Route]] */
-    private array $routesByMethod = [];
+    private ?string $baseAppPath = null;
 
-    /**
-     * @param Route|string|array<string> $routeOrMethod
-     */
-    public function addRoute(Route|string|array $routeOrMethod, string $uri = null, callable $target = null): void
+    /** @var array<string, array<string, array<\FlorentPoujol\SimplePhpFramework\Route>>> Routes instances by HTTp methods and prefixes */
+    private array $routes = [];
+
+    /** @var array<string, \FlorentPoujol\SimplePhpFramework\Route> */
+    private array $routesByName = [];
+
+    public function setBaseAppPath(string $baseAppPath): self
     {
-        if (! is_object($routeOrMethod)) {
-            // $route is the method(s)
-            $routeOrMethod = new Route($routeOrMethod, $uri, $target); // @phpstan-ignore-line
-        }
+        $this->baseAppPath = $baseAppPath;
 
-        $methods = $routeOrMethod->getMethods();
+        return $this;
+    }
 
-        foreach ($methods as $method) {
-            $this->routesByMethod[$method] ??= [];
-            $this->routesByMethod[$method][] = $routeOrMethod;
-        }
+    public function getRouteByName(string $name): ?Route
+    {
+        return $this->routesByName[$name] ?? null;
     }
 
     public function resolveRoute(): ?Route
     {
-        $method = strtolower($_SERVER['REQUEST_METHOD']);
-        $uri = $_SERVER['REQUEST_URI'];
+        $this->collectRoutes();
 
-        if (! isset($this->routesByMethod[$method])) {
+        $method = strtolower($_SERVER['REQUEST_METHOD']);
+        if (! isset($this->routes[$method])) {
             // no routes
             return null;
         }
 
-        $routes = $this->routesByMethod[$method];
+        $uri = '/' . trim($_SERVER['REQUEST_URI'], ' /');
 
-        // get the matched route
-        foreach ($routes as $route) {
-            if ($route->match($method, $uri)) {
-                return $route;
+        foreach ($this->routes[$method] as $prefix => $routes) {
+            if (! str_starts_with($uri, $prefix)) {
+                continue;
+            }
+
+            // we found all routes which prefix match the current URI
+            // now we need to find which route actually match the whole URI
+            // even if there is a single route, it does not mean it match
+            foreach ($routes as $route) {
+                if ($route->match($uri)) {
+                    return $route;
+                }
             }
         }
-        // to prevent looping on all routes and matching them individually against the uri (which is the slowest)
-        // we could do a few things:
-        // - when routes have a non-regex prefix (like "/user/{id}"), they can be segregated by it
-        // - when regex is needed, we could use grouped and chunked regexes
-        //   see https://nikic.github.io/2014/02/18/Fast-request-routing-using-regular-expressions.html
 
         return null;
+    }
+
+    private function collectRoutes(): void
+    {
+        $routes = require $this->baseAppPath . '/routes.php';
+
+        /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
+        foreach ($routes as $route) {
+            if ($route->getName() !== null) {
+                $this->routesByName[$route->getName()] = $route; // used for URL generation
+            }
+
+            $uri = $route->getUri();
+            $prefix = $uri;
+            $firstPlaceholderPos = strpos($uri, '{');
+            if (is_int($firstPlaceholderPos)) {
+                $prefix = substr($route->getUri(), 0, $firstPlaceholderPos - 1);
+            }
+
+            foreach ($route->getMethods() as $method) {
+                $this->routes[$method][$prefix][] = $route;
+            }
+        }
+
+        foreach ($this->routes as $method => &$routesByPrefix) { // /!\ REFERENCE
+            krsort($routesByPrefix); // sort alphabetically in reverse order, so that the longest prefixes are first
+        }
     }
 }

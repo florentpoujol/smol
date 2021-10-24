@@ -44,7 +44,7 @@ final class Framework
     private function init(): void
     {
         $this->container = new $this->containerFqcn();
-        // $this->container->init();
+        $this->container->setFactory(Router::class, [$this->baseDirectory]);
     }
 
     public function handleHttpRequest(): void
@@ -58,6 +58,7 @@ final class Framework
             exit(0);
         }
 
+        /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
         $response = $route->callControllerAction();
 
         $this->sendResponseToClient($response);
