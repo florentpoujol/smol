@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
+use Psr\Http\Message\ResponseInterface;
+
 final class Framework
 {
     public static function make(string $baseDirectory): self
@@ -40,32 +42,36 @@ final class Framework
 
     public function handleHttpRequest(): void
     {
-        // $uri = $_REQUEST['REQUEST_URI'];
-        //
-        // $router = new Router();
-        // $route = $router->resolveRoute($uri);
-        //
-        // if ($route === null) {
-        //     if ($router->throwOn404()) {
-        //         throw new HttpException();
-        //     }
-        //
-        //     http_response_code(404);
-        //
-        //     exit(0);
-        // }
-        //
-        // $this->init();
-        //
-        // $serverRequest = $this->container->make(PsrServerRequest);
-        //
-        // $response = $this->sendRequestThroughMiddleware($serverRequest);
-        // if ($response === null) {
-        //     $response = $route->sendRequestToController($serverRequest);
-        // }
-        //
-        // $this->sendResponseThroughMiddleware($response);
-        //
-        // $response->send();
+        $route = (new Router())->resolveRoute();
+        if ($route === null) {
+            http_response_code(404);
+
+            exit(0);
+        }
+
+        $response = $route->callControllerAction();
+
+        $this->sendResponseToClient($response);
+    }
+
+    /**
+     * @return never-return
+     */
+    private function sendResponseToClient(ResponseInterface $response): void
+    {
+        http_response_code($response->getStatusCode());
+
+        /**
+         * @var array<string> $values
+         */
+        foreach ($response->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                header("$name: $value", false);
+            }
+        }
+
+        echo $response->getBody()->getContents();
+
+        exit(0);
     }
 }

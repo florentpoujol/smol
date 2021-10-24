@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace FlorentPoujol\SimplePhpFramework;
 
 use Closure;
+use Psr\Http\Message\ResponseInterface;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
 
 final class Route
 {
@@ -201,5 +204,57 @@ final class Route
         }
 
         return $assocMatches;
+    }
+
+    public function callControllerAction(): ResponseInterface
+    {
+        // get the parameters list based on the callable type
+        /** @var callable $callable */
+        $callable = $this->action;
+
+        $rFunc = null;
+        if (is_string($callable)) {
+            if (function_exists($callable)) {
+                $rFunc = new \ReflectionFunction($callable);
+            } elseif (str_contains($callable, '::')) {
+                // Class::staticMethod
+                $parts = explode('::', $callable);
+                $rFunc = new ReflectionMethod($parts[0], $parts[1]);
+            }
+        } elseif (is_array($callable)) {
+            // ["class", "staticMethod"] [$object, "method"]
+            $rFunc = new ReflectionMethod($callable[0], $callable[1]);
+        } elseif (is_object($callable)) {
+            // invokable object or closure
+            $rFunc = new ReflectionMethod($callable, '__invoke');
+        }
+
+        $rParams = [];
+        if ($rFunc instanceof ReflectionFunctionAbstract) {
+            $rParams = $rFunc->getParameters();
+        }
+
+        // build the argument list
+        // this is needed because the callable's argument order
+        // may not be the same in the uri
+        $params = [];
+        $paramsFromUri = $this->getParamsFromUri($this->rawUri);
+        $paramDefaults = $this->getParamDefaults();
+        foreach ($rParams as $rParam) {
+            $name = $rParam->getName();
+
+            if (isset($paramsFromUri[$name])) {
+                $params[] = $paramsFromUri[$name];
+            } elseif (isset($paramDefaults[$name])) {
+                $params[] = $paramDefaults[$name];
+            } else {
+                break;
+                // do not set it to null so that the arg isn't passed at all to the target
+                // and the callable applies the default value (hopefully) set in its signature
+            }
+        }
+
+        // finally, call the target
+        return $callable(...$params);
     }
 }
