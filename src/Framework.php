@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SimplePhpFramework;
 
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 final class Framework
 {
@@ -57,15 +58,64 @@ final class Framework
 
         if ($route === null) {
             http_response_code(404);
-
             echo $_SERVER['REQUEST_URI'] . ' not found';
 
             exit(0);
         }
 
+        $this->sendRequestThroughMiddleware($route); // may exit here
+
         $response = $this->callRouteAction($route);
 
+        $response = $this->sendResponseThroughMiddleware($response);
+
         $this->sendResponseToClient($response);
+    }
+
+    /**
+     * @return void|never-return
+     */
+    private function sendRequestThroughMiddleware(Route $route): void
+    {
+        $middleware = $route->getMiddleware();
+        if (count($middleware) === 0) {
+            return;
+        }
+
+        $this->responseMiddleware = [];
+        $serverRequest = $this->container->get(ServerRequestInterface::class);
+
+        foreach ($middleware as $_middleware) {
+            if (! is_callable($_middleware)) {
+                // "Controller@method"
+                [$fqcn, $method] = explode('@', $_middleware, 2);
+                $_middleware = [$this->container->get($fqcn), $method];
+                assert(is_callable($_middleware));
+            }
+
+            $response = $_middleware($serverRequest, $this);
+            $this->responseMiddleware[] = $_middleware;
+
+            if ($response !== null) {
+                $response = $this->sendResponseThroughMiddleware($response);
+
+                $this->sendResponseToClient($response);
+            }
+        }
+    }
+
+    /** @var array<callable> */
+    private array $responseMiddleware = [];
+
+    private function sendResponseThroughMiddleware(ResponseInterface $response): ResponseInterface
+    {
+        $middleware = array_reverse($this->responseMiddleware);
+
+        foreach ($middleware as $_middleware) {
+            $response = $_middleware($response, $this) ?? $response;
+        }
+
+        return $response;
     }
 
     private function callRouteAction(Route $route): ResponseInterface
@@ -75,12 +125,11 @@ final class Framework
 
         if (! is_callable($action)) {
             // "Controller@method"
-            /** @var class-string $fqcn */
             [$fqcn, $method] = explode('@', $action, 2);
             $action = [$this->container->get($fqcn), $method];
+            assert(is_callable($action));
         }
 
-        // @phpstan-ignore-next-line
         return $action(
             ...$route->getActionArguments() // this unpacks an assoc array and make use of named arguments to inject the proper value taken from the URI segments to the correct argument
         );

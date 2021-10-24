@@ -84,7 +84,7 @@ final class Container implements ContainerInterface
     /**
      * @param string|class-string $id
      */
-    public function get(string $id): mixed
+    public function get(string $id): ?object
     {
         if (isset($this->instances[$id])) {
             return $this->instances[$id];

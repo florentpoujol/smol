@@ -136,4 +136,26 @@ final class Route
     {
         return is_string($this->action) && str_starts_with($this->action, 'redirect');
     }
+
+    // --------------------------------------------------
+    // middleware stuffs
+
+    /** @var array<callable|string> */
+    private array $middleware = [];
+
+    /**
+     * @param array<callable|string> $middleware
+     */
+    public function addMiddleware(array $middleware): void
+    {
+        $this->middleware = array_merge($this->middleware, $middleware);
+    }
+
+    /**
+     * @return array<callable|string>
+     */
+    public function getMiddleware(): array
+    {
+        return $this->middleware;
+    }
 }

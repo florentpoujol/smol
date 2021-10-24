@@ -96,7 +96,7 @@ final class Router
     private function redirect(Route $route): void
     {
         $action = $route->getAction();
-        /** @var string $action */
+        assert(is_string($action));
 
         http_response_code(302);
         if (str_starts_with($action, 'redirect-permanent:')) {
