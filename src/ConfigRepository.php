@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-
 final class ConfigRepository
 {
     private static bool $envFileRead = false;
@@ -85,20 +82,19 @@ final class ConfigRepository
 
         $this->readEnvFile();
 
-        /** @var RecursiveDirectoryIterator|RecursiveIteratorIterator $iterator */
-        $iterator = new RecursiveIteratorIterator( // @phpstan-ignore-line (the RecursiveDirectoryIterator PHPDoc is for proper highlight of the
-            new RecursiveDirectoryIterator($this->baseAppPath . '/config')
-        );
+        self::$config = ['cache_map' => []];
 
-        while ($iterator->valid()) {
-            /** @var \SplFileInfo $file */
-            $file = $iterator->current();
-            if ($file->isFile() && $file->isReadable()) {
-                $key = str_replace('.php', '', $file->getBasename());
-                self::$config[$key] = require $file->getPathname();
+        $files = scandir($this->baseAppPath . '/config');
+        assert(is_array($files));
+
+        foreach ($files as $path) {
+            if (str_ends_with($path, '.')) {
+                continue;
             }
 
-            $iterator->next();
+            $filename = str_replace('.php', '', $path);
+
+            self::$config[$filename] = require $this->baseAppPath . '/config/' . $path;
         }
     }
 
