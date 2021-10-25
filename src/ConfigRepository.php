@@ -110,7 +110,7 @@ final class ConfigRepository
             return;
         }
 
-        $envVarPattern = '/^\s*(?<key>[A-Z0-9_-]+)\s*=\s*("|\')?(?<value>.+)("|\')?\s*$/i'; // eg: SOME_ENV = "a value"
+        $envVarPattern = '/^\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)$/iU'; // eg: SOME_ENV = "a value"
         while (is_string($line = fgets($envFileResource))) {
             $matches = [];
             $line = trim($line);
@@ -121,7 +121,14 @@ final class ConfigRepository
                 continue;
             }
 
-            putenv($matches['key'] . '=' . $matches['value']);
+            $value = trim($matches['value']);
+            if ($value[0] === '"' || $value[0] === "'") {
+                // if the value is surrounded by a quotation mark, remove it, but only that one
+                // so that a value like ""test"" become "test"
+                $value = substr($value, 1, -1);
+            }
+
+            putenv($matches['key'] . '=' . $value);
         }
 
         fclose($envFileResource);
