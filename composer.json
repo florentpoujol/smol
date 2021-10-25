@@ -10,6 +10,7 @@
         }
     },
     "autoload-dev": {
+        "files": ["src/helpers.php"],
         "psr-4" : {
             "Tests\\FlorentPoujol\\SimplePhpFramework\\" : "tests/"
         }
