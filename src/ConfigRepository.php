@@ -34,14 +34,21 @@ final class ConfigRepository
         $keys = explode('.', $key);
         $value = self::$config;
 
+        $valueFound = true;
         foreach ($keys as $_key) {
             $value = $value[$_key] ?? null;
             if (! is_array($value)) {
+                if (! isset($value[$_key])) {
+                    $valueFound = false;
+                }
+
                 break;
             }
         }
 
-        self::$config['cache_map'][$key] = $value; // may be null, that's ok
+        if ($valueFound) {
+            self::$config['cache_map'][$key] = $value; // may be null, that's ok
+        }
 
         return $value ?? $default;
     }
