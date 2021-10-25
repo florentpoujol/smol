@@ -17,3 +17,21 @@ if (! function_exists('env')) {
         };
     }
 }
+
+if (! function_exists('dd')) {
+    /**
+     * @return never-return
+     */
+    function dd(mixed ...$values): void
+    {
+        if (function_exists('xdebug_var_dump')) {
+            xdebug_var_dump(...$values);
+
+            exit(0);
+        }
+
+        var_dump(...$values);
+
+        exit(0);
+    }
+}
