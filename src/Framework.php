@@ -63,7 +63,7 @@ final class Framework
             exit(0);
         }
 
-        $this->sendRequestThroughMiddleware($route); // may exit here
+        $this->sendRequestThroughMiddleware($route); // code may exit here
 
         $response = $this->callRouteAction($route);
 
@@ -99,7 +99,7 @@ final class Framework
             if ($response !== null) {
                 $response = $this->sendResponseThroughMiddleware($response);
 
-                $this->sendResponseToClient($response);
+                $this->sendResponseToClient($response); // code exit here
             }
         }
     }

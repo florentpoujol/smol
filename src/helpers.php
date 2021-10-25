@@ -7,17 +7,13 @@ if (! function_exists('env')) {
     {
         // getenv() always return a string, or false if env var doesn't exists
         $value = getenv($key);
-        if ($value === false) {
-            return $default;
-        }
 
-        if ($value === 'true' || $value === 'false') {
-            return (bool) $value;
-        }
-        if ($value === 'null') {
-            return null;
-        }
-
-        return $value;
+        return match ($value) {
+            false => $default,
+            'true' => true,
+            'false' => false,
+            'null' => null,
+            default => $value,
+        };
     }
 }
