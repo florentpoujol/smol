@@ -9,7 +9,7 @@ final class ConfigRepository
     private static bool $envFileRead = false;
 
     /** @var array<string, mixed> */
-    private static array $config = [];
+    private array $config = [];
 
     public function __construct(
         private string $baseAppPath
@@ -21,15 +21,15 @@ final class ConfigRepository
         $this->loadConfig();
 
         if (! str_contains($key, '.')) {
-            return self::$config[$key] ?? $default;
+            return $this->config[$key] ?? $default;
         }
 
-        if (array_key_exists($key, self::$config['cache_map'])) {
-            return self::$config['cache_map'][$key];
+        if (array_key_exists($key, $this->config['cache_map'])) {
+            return $this->config['cache_map'][$key];
         }
 
         $keys = explode('.', $key);
-        $value = self::$config;
+        $value = $this->config;
 
         $valueFound = true;
         foreach ($keys as $_key) {
@@ -44,7 +44,7 @@ final class ConfigRepository
         }
 
         if ($valueFound) {
-            self::$config['cache_map'][$key] = $value; // may be null, that's ok
+            $this->config['cache_map'][$key] = $value; // may be null, that's ok
         }
 
         return $value ?? $default;
@@ -54,7 +54,7 @@ final class ConfigRepository
     {
         $this->loadConfig();
 
-        self::$config['cache_map'][$key] = $value;
+        $this->config['cache_map'][$key] = $value;
     }
 
     /**
@@ -62,27 +62,27 @@ final class ConfigRepository
      */
     public function getAll(): array
     {
-        return self::$config;
+        return $this->config;
     }
 
     // --------------------------------------------------
 
     private function loadConfig(): void
     {
-        if (count(self::$config) > 0) {
+        if (count($this->config) > 0) {
             return;
         }
 
         $cacheFilePath = $this->baseAppPath . '/storage/frameworkCache/config.cache.php';
         if (file_exists($cacheFilePath)) {
-            self::$config = require $cacheFilePath;
+            $this->config = require $cacheFilePath;
 
             return;
         }
 
         $this->readEnvFile();
 
-        self::$config = ['cache_map' => []];
+        $this->config = ['cache_map' => []];
 
         $files = scandir($this->baseAppPath . '/config');
         assert(is_array($files));
@@ -94,7 +94,7 @@ final class ConfigRepository
 
             $filename = str_replace('.php', '', $path);
 
-            self::$config[$filename] = require $this->baseAppPath . '/config/' . $path;
+            $this->config[$filename] = require $this->baseAppPath . '/config/' . $path;
         }
     }
 
@@ -122,7 +122,10 @@ final class ConfigRepository
             }
 
             $value = trim($matches['value']);
-            if ($value[0] === '"' || $value[0] === "'") {
+            if (
+                   ($value[0] === '"' && $value[-1] === '"')
+                || ($value[0] === "'" && $value[-1] === "'")
+            ) {
                 // if the value is surrounded by a quotation mark, remove it, but only that one
                 // so that a value like ""test"" become "test"
                 $value = substr($value, 1, -1);
