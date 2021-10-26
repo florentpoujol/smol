@@ -42,13 +42,13 @@ if (! function_exists('dd')) {
      */
     function dd(mixed ...$values): void
     {
-        if (function_exists('xdebug_var_dump')) {
+        if (function_exists('dump')) {
+            dump(...$values); // typically, provided by the Symfony VarDumper component
+        } elseif (function_exists('xdebug_var_dump')) {
             xdebug_var_dump(...$values);
-
-            exit(0);
+        } else {
+            var_dump(...$values);
         }
-
-        var_dump(...$values);
 
         exit(0);
     }
