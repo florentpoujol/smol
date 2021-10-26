@@ -65,23 +65,33 @@ final class Router
 
     private function collectRoutes(): void
     {
-        $routes = require $this->baseAppPath . '/routes.php';
+        $files = scandir($this->baseAppPath . '/routes');
+        assert(is_array($files));
 
-        /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
-        foreach ($routes as $route) {
-            if ($route->getName() !== null) {
-                $this->routesByName[$route->getName()] = $route; // used for URL generation
+        foreach ($files as $path) {
+            if (str_ends_with($path, '.')) {
+                continue;
             }
 
-            $uri = $route->getUri();
-            $prefix = $uri;
-            $firstPlaceholderPos = strpos($uri, '{');
-            if (is_int($firstPlaceholderPos)) {
-                $prefix = substr($route->getUri(), 0, $firstPlaceholderPos);
-            }
+            $filename = str_replace('.php', '', $path);
+            $routes = require $this->baseAppPath . '/routes/' . $path;
 
-            foreach ($route->getMethods() as $method) {
-                $this->routes[$method][$prefix][] = $route;
+            /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
+            foreach ($routes as $route) {
+                if ($route->getName() !== null) {
+                    $this->routesByName[$route->getName()] = $route; // used for URL generation
+                }
+
+                $uri = $route->getUri();
+                $prefix = $uri;
+                $firstPlaceholderPos = strpos($uri, '{');
+                if (is_int($firstPlaceholderPos)) {
+                    $prefix = substr($route->getUri(), 0, $firstPlaceholderPos);
+                }
+
+                foreach ($route->getMethods() as $method) {
+                    $this->routes[$method][$prefix][] = $route;
+                }
             }
         }
 

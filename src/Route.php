@@ -18,6 +18,11 @@ final class Route
     /** @var array<string, string> */
     private array $actionArguments = [];
 
+    /** @var array<string> */
+    private array $placeholderRegexes;
+
+    private ?string $name;
+
     /**
      * @param array<string>|string  $methods            Http method(s)
      * @param array<string, string> $placeholderRegexes keys are placeholder names, values are regex
@@ -26,12 +31,14 @@ final class Route
         array|string $methods,
         string $uri,
         callable|string $action,
-        private array $placeholderRegexes = [],
-        private ?string $name = null
+        array $placeholderRegexes = [],
+        ?string $name = null
     ) {
         $this->methods = array_map('strtoupper', (array) $methods);
         $this->uri = '/' . trim($uri, ' /'); // space + /
         $this->action = $action; // @phpstan-ignore-line
+        $this->placeholderRegexes = $placeholderRegexes;
+        $this->name = $name;
     }
 
     /**
@@ -71,7 +78,7 @@ final class Route
             return;
         }
         // turn a route like "/docs/{page}" with page [a-z-]+
-        // into "/docs/([a-z-]+)"
+        // into "/docs/(?<page>[a-z-]+)"
 
         $placeholders = [];
         $regexes = [];
@@ -107,8 +114,7 @@ final class Route
         $this->buildRegexUri();
 
         $matches = [];
-        $match = preg_match('~^' . $this->regexUri . '$~', $actualUri, $matches) === 1;
-        if (! $match) {
+        if (preg_match('~^' . $this->regexUri . '$~', $actualUri, $matches) !== 1) {
             return false;
         }
 
@@ -144,6 +150,8 @@ final class Route
     private array $middleware = [];
 
     /**
+     * Add one **or several** middleware.
+     *
      * @param array<callable|string> $middleware
      */
     public function addMiddleware(array $middleware): void
