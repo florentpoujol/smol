@@ -104,24 +104,20 @@ final class ConfigRepository
             return;
         }
 
-        $envFilePath = $this->baseAppPath . '/.env';
-        $envFileResource = fopen($envFilePath, 'r');
-        if ($envFileResource === false) {
+        if (! file_exists($this->baseAppPath . '/.env')) {
+            self::$envFileRead = true;
+
             return;
         }
 
-        $envVarPattern = '/^\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)$/iU'; // eg: SOME_ENV = "a value"
-        while (is_string($line = fgets($envFileResource))) {
-            $matches = [];
-            $line = trim($line);
-            if (
-                $line === '' || $line[0] === '#'
-                || preg_match($envVarPattern, $line, $matches) !== 1
-            ) {
-                continue;
-            }
+        $envVarPattern = '/\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)\n/iU'; // eg: SOME_ENV = "a value"
+        $fileContent = file_get_contents($this->baseAppPath . '/.env');
+        $matches = [];
 
-            $value = trim($matches['value']);
+        preg_match_all($envVarPattern, $fileContent, $matches);
+
+        foreach ($matches['key'] as $i => $key) {
+            $value = trim($matches['value'][$i]);
             if (
                    ($value[0] === '"' && $value[-1] === '"')
                 || ($value[0] === "'" && $value[-1] === "'")
@@ -131,10 +127,8 @@ final class ConfigRepository
                 $value = substr($value, 1, -1);
             }
 
-            putenv($matches['key'] . '=' . $value);
+            putenv("$key=$value");
         }
-
-        fclose($envFileResource);
 
         self::$envFileRead = true;
     }
