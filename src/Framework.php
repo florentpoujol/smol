@@ -4,20 +4,33 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
+use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class Framework
 {
+    private static ?self $instance = null;
+
     public static function make(string $baseDirectory): self
     {
         return new self($baseDirectory);
+    }
+
+    public static function getInstance(): self
+    {
+        assert(self::$instance !== null);
+
+        return self::$instance;
     }
 
     private string $baseDirectory;
 
     public function __construct(string $baseDirectory)
     {
+        assert(self::$instance === null);
+        self::$instance = $this;
+
         $realpath = realpath($baseDirectory);
         $this->baseDirectory = is_string($realpath) ? $realpath : $baseDirectory;
 
@@ -46,8 +59,10 @@ final class Framework
     private function init(): void
     {
         $this->container = new $this->containerFqcn();
+
         $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseDirectory]);
         $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseDirectory]);
+        $this->container->setFactory(TranslationsRepository::class, ['baseAppPath' => $this->baseDirectory]);
     }
 
     public function handleHttpRequest(): void
