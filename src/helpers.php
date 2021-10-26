@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use FlorentPoujol\SimplePhpFramework\Framework;
+use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
+
 if (! function_exists('env')) {
     function env(string $key, mixed $default = null): mixed
     {
@@ -15,6 +18,21 @@ if (! function_exists('env')) {
             'null' => null,
             default => $value,
         };
+    }
+}
+
+if (! function_exists('__')) {
+    /**
+     * @param array<string, string> $templateReplacements Keys are the semi-colon prefixed templates found in the translation string, values are their replacement string
+     */
+    function __(string $key, array $templateReplacements = []): string
+    {
+        /** @var TranslationsRepository $translationRepository */
+        $translationRepository = Framework::getInstance()
+            ->getContainer()
+            ->get(TranslationsRepository::class);
+
+        return $translationRepository->get($key, $templateReplacements);
     }
 }
 
