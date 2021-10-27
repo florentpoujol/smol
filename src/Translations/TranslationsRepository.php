@@ -31,9 +31,13 @@ final class TranslationsRepository
         $keys = explode('.', $key);
 
         // read language file not done already
+        $this->translations[$language] ??= [];
+
         if (! isset($this->translations[$language][$keys[0]])) {
-            $this->translations[$language][$keys[0]] =
-                require "$this->baseAppPath/translations/$language/$keys[0].php";
+            $filePath = "$this->baseAppPath/translations/$language/$keys[0].php";
+            if (file_exists($filePath)) {
+                $this->translations[$language][$keys[0]] = require $filePath;
+            }
         }
 
         // get the value that match the key
