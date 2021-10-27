@@ -22,8 +22,8 @@ final class TranslationsRepository
      */
     public function get(string $key, array $templateReplacements = [], string $overrideLanguage = null): string
     {
-        $language = $overrideLanguage ?? $this->configRepository->get('app.current_language', 'en');
-        $fallbackLanguage = $this->configRepository->get('app.fallback_language');
+        $language = $overrideLanguage ?? $this->configRepository->get('app.translations.current_language', 'en');
+        $fallbackLanguage = $this->configRepository->get('app.translations.fallback_language');
         if ($language === $fallbackLanguage) {
             $fallbackLanguage = null;
         }
