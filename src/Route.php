@@ -113,19 +113,19 @@ final class Route
 
         $this->buildRegexUri();
 
-        $matches = [];
-        if (preg_match('~^' . $this->regexUri . '$~', $actualUri, $matches) !== 1) {
+        $actionArguments = [];
+        if (preg_match('~^' . $this->regexUri . '$~', $actualUri, $actionArguments) !== 1) {
             return false;
         }
 
         // remove integer keys
-        foreach ($matches as $key => $value) {
+        foreach ($actionArguments as $key => $value) {
             if (is_int($key)) {
-                unset($matches[$key]);
+                unset($actionArguments[$key]);
             }
         }
 
-        $this->actionArguments = $matches;
+        $this->actionArguments = $actionArguments;
 
         return true;
     }
@@ -154,9 +154,11 @@ final class Route
      *
      * @param array<callable|string> $middleware
      */
-    public function addMiddleware(array $middleware): void
+    public function addMiddleware(array $middleware): self
     {
         $this->middleware = array_merge($this->middleware, $middleware);
+
+        return $this;
     }
 
     /**

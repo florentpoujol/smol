@@ -112,6 +112,7 @@ final class ConfigRepository
 
         $envVarPattern = '/\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)\n/iU'; // eg: SOME_ENV = "a value"
         $fileContent = file_get_contents($this->baseAppPath . '/.env');
+        assert(is_string($fileContent));
         $matches = [];
 
         preg_match_all($envVarPattern, $fileContent, $matches);

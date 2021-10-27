@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SimplePhpFramework;
 
 use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
+use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -72,10 +73,19 @@ final class Framework
         $route = $router->resolveRoute();
 
         if ($route === null) {
-            http_response_code(404);
-            echo $_SERVER['REQUEST_URI'] . ' not found';
+            $this->sendResponseToClient(
+                new Response(404, body: $_SERVER['REQUEST_URI'] . ' not found')
+            );
+        }
 
-            exit(0);
+        if ($route->isRedirect()) {
+            $action = $route->getAction();
+            assert(is_string($action));
+
+            $status = str_starts_with($action, 'redirect-permanent:') ? 301 : 302;
+            $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
+
+            $this->sendResponseToClient(new Response($status, ['Location' => $location]));
         }
 
         $this->sendRequestThroughMiddleware($route); // code may exit here
