@@ -1,0 +1,2 @@
+
+Admin <?php echo $viewData; ?>

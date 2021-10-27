@@ -64,6 +64,7 @@ final class Framework
         $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseDirectory]);
         $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseDirectory]);
         $this->container->setFactory(TranslationsRepository::class, ['baseAppPath' => $this->baseDirectory]);
+        $this->container->setFactory(ViewRenderer::class, ['baseAppPath' => $this->baseDirectory]);
     }
 
     public function handleHttpRequest(): void
