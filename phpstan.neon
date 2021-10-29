@@ -10,4 +10,4 @@ parameters:
         - tests
 
     excludePaths:
-        - tests/Fixtures/views
+        - tests/Fixtures/Views
