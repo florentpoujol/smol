@@ -11,7 +11,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
-final class HttpClient implements ClientInterface
+final class CurlHttpClient implements ClientInterface
 {
     private CurlHandle $curlHandle;
 
