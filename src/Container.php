@@ -57,7 +57,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string                              $serviceName
+     * @param class-string|string                              $serviceName
      * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
@@ -66,7 +66,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string $serviceName
+     * @param class-string|string $serviceName
      */
     public function setInstance(string $serviceName, object $instance): void
     {
@@ -74,7 +74,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string $id
+     * @param class-string|string $id
      */
     public function has(string $id): bool
     {
@@ -82,7 +82,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param string|class-string $id
+     * @param class-string|string $id
      */
     public function get(string $id): ?object
     {

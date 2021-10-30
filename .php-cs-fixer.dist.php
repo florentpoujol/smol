@@ -19,6 +19,7 @@ return (new PhpCsFixer\Config())
         'no_superfluous_elseif' => true,
         'not_operator_with_successor_space' => true,
         'php_unit_method_casing' => ['case' => 'snake_case'],
+        'phpdoc_types_order' => ['null_adjustment' => 'always_first', 'sort_algorithm' => 'none'], // do not set the sort algo to alpha because it fuck-up array definitions
         'single_trait_insert_per_statement' => true,
         'use_arrow_functions' => false, // do not force single line closure to be arrow functions
         'yoda_style' => ['equal' => null, 'identical' => null, 'less_and_greater' => null], // null = leave as-is, don't enforce anything either way

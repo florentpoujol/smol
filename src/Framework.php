@@ -99,7 +99,7 @@ final class Framework
     }
 
     /**
-     * @return void|never-return
+     * @return never-return|void
      */
     private function sendRequestThroughMiddleware(Route $route): void
     {

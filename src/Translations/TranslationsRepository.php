@@ -8,7 +8,7 @@ use FlorentPoujol\SimplePhpFramework\ConfigRepository;
 
 final class TranslationsRepository
 {
-    /** @var array<string, array<string, string|array>> Translations per language, per file name */
+    /** @var array<string, array<string, array|string>> Translations per language, per file name */
     private array $translations = [];
 
     public function __construct(

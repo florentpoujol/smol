@@ -63,8 +63,6 @@ final class ViewRenderer
         }
 
         $patterns = [ // search => replace
-
-
             // {{ something }}
             '/{{\s*([a-zA-z0-9_-]+)\s*}}/' => '<?= \$$1; ?>',
             // {{ something|e }} {{ something|escape }}
