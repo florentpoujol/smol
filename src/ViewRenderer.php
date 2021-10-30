@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
-use const EXTR_OVERWRITE;
-
 final class ViewRenderer
 {
     public function __construct(

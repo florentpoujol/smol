@@ -22,9 +22,9 @@ final class HttpClient implements ClientInterface
 
     /** @var array<int, mixed> Keys must be from the CURLOPT_* constants. */
     private array $options = [
-        \CURLOPT_USERAGENT => 'Smol Framework/v0.1.0',
-        \CURLOPT_CONNECTTIMEOUT => 10,
-        \CURLOPT_TIMEOUT => 10,
+        CURLOPT_USERAGENT => 'Smol Framework/v0.1.0',
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 10,
     ];
 
     /**
@@ -68,10 +68,10 @@ final class HttpClient implements ClientInterface
 
         if (
             (
-                isset($this->options[\CURLOPT_POST], $this->options[\CURLOPT_PUT])
-                || ($this->options[\CURLOPT_CUSTOMREQUEST] ?? null) === 'PATCH'
+                isset($this->options[CURLOPT_POST], $this->options[CURLOPT_PUT])
+                || ($this->options[CURLOPT_CUSTOMREQUEST] ?? null) === 'PATCH'
             )
-            && ! isset($this->options[\CURLOPT_POSTFIELDS])
+            && ! isset($this->options[CURLOPT_POSTFIELDS])
         ) {
             // POST or PUT or PATCH
             // and no body is set yet
@@ -79,11 +79,11 @@ final class HttpClient implements ClientInterface
                 $request->getBody()->rewind();
             }
 
-            curl_setopt($curlHandle, \CURLOPT_POSTFIELDS, $request->getBody()->getContents());
+            curl_setopt($curlHandle, CURLOPT_POSTFIELDS, $request->getBody()->getContents());
         }
 
-        curl_setopt($curlHandle, \CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curlHandle, \CURLOPT_HEADER, false);
+        curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curlHandle, CURLOPT_HEADER, false);
 
         if (is_callable($this->beforeSendHook)) {
             ($this->beforeSendHook)($this->curlHandle, $request);
@@ -97,44 +97,44 @@ final class HttpClient implements ClientInterface
             $this->handleFailedRequest($request);
         }
 
-        $headersAsString = curl_getinfo($curlHandle, \CURLINFO_HEADER_OUT);
-        $headers = explode(\PHP_EOL, $headersAsString);
+        $headersAsString = curl_getinfo($curlHandle, CURLINFO_HEADER_OUT);
+        $headers = explode(PHP_EOL, $headersAsString);
         foreach ($headers as $line) {
             [$name, $values] = explode(': ', $line, 2); // @phpstan-ignore-line (Parameter #2 $string of function explode expects string, array<int, string>|string given.)
             $headers[$name] = explode(', ', $values);
         }
 
         return new Response(
-            curl_getinfo($curlHandle, \CURLINFO_RESPONSE_CODE),
+            curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE),
             $headers,
             $body,
-            curl_getinfo($curlHandle, \CURLINFO_HTTP_VERSION)
+            curl_getinfo($curlHandle, CURLINFO_HTTP_VERSION)
         );
     }
 
     private function setOptionsFromRequest(RequestInterface $request): void
     {
-        $this->options[\CURLOPT_HTTP_VERSION] = $request->getProtocolVersion();
+        $this->options[CURLOPT_HTTP_VERSION] = $request->getProtocolVersion();
 
         switch (strtoupper($request->getMethod())) {
             default: // GET
-                $this->options[\CURLOPT_HTTPGET] = true;
-                $this->options[\CURLOPT_NOBODY] = true;
+                $this->options[CURLOPT_HTTPGET] = true;
+                $this->options[CURLOPT_NOBODY] = true;
                 break;
             case 'POST':
-                $this->options[\CURLOPT_POST] = true;
+                $this->options[CURLOPT_POST] = true;
                 break;
             case 'PUT':
-                $this->options[\CURLOPT_PUT] = true;
+                $this->options[CURLOPT_PUT] = true;
                 break;
             case 'PATCH':
-                $this->options[\CURLOPT_CUSTOMREQUEST] = 'PATCH';
+                $this->options[CURLOPT_CUSTOMREQUEST] = 'PATCH';
                 break;
             case 'HEAD':
             case 'OPTIONS':
             case 'DELETE':
-                $this->options[\CURLOPT_CUSTOMREQUEST] = strtoupper($request->getMethod());
-                $this->options[\CURLOPT_NOBODY] = true;
+                $this->options[CURLOPT_CUSTOMREQUEST] = strtoupper($request->getMethod());
+                $this->options[CURLOPT_NOBODY] = true;
                 break;
         }
 
@@ -153,7 +153,7 @@ final class HttpClient implements ClientInterface
             $headers[] = 'Accept: application/json';
         }
 
-        $this->options[\CURLOPT_HTTPHEADER] = $headers;
+        $this->options[CURLOPT_HTTPHEADER] = $headers;
     }
 
     /**
