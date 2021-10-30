@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace FlorentPoujol\SimplePhpFramework;
 
 use Exception;
+use Nyholm\Psr7\Request;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use UnexpectedValueException;
 
 final class Container implements ContainerInterface
@@ -16,6 +19,8 @@ final class Container implements ContainerInterface
     private array $factories = [
         ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
         ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
+        RequestHandlerInterface::class => Psr15RequestHandler::class,
+        RequestInterface::class => Request::class,
     ];
 
     /**

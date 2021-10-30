@@ -18,7 +18,7 @@ return [
     new Route('get', '/redirect/301', 'redirect-permanent:/somewhere-else'),
 
     (new Route('get', '/middleware', 'nothing'))
-        ->addMiddleware([
+        ->setMiddleware([
             TestMiddleware1::class,
             TestMiddleware2::class,
         ]),

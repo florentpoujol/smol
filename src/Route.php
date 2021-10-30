@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SimplePhpFramework;
 
+use Psr\Http\Server\MiddlewareInterface;
+
 final class Route
 {
     /** @var array<string> */
@@ -146,26 +148,36 @@ final class Route
     // --------------------------------------------------
     // middleware stuffs
 
-    /** @var array<callable|string> */
+    /** @var array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>> */
     private array $middleware = [];
 
     /**
      * Add one **or several** middleware.
      *
-     * @param array<callable|string> $middleware
+     * @param array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>> $middleware
      */
-    public function addMiddleware(array $middleware): self
+    public function setMiddleware(array $middleware): self
     {
-        $this->middleware = array_merge($this->middleware, $middleware);
+        $this->middleware = $middleware;
 
         return $this;
     }
 
     /**
-     * @return array<callable|string>
+     * @return array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>>
      */
     public function getMiddleware(): array
     {
         return $this->middleware;
+    }
+
+    public function hasPsr15Middleware(): bool
+    {
+        $mid = $this->middleware[0] ?? null;
+
+        return
+            is_string($mid)
+            && class_exists($mid)
+            && in_array(MiddlewareInterface::class, class_implements($mid), true);
     }
 }

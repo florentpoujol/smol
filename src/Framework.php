@@ -8,6 +8,7 @@ use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 final class Framework
 {
@@ -35,7 +36,7 @@ final class Framework
         $realpath = realpath($baseDirectory);
         $this->baseDirectory = is_string($realpath) ? $realpath : $baseDirectory;
 
-        $this->init();
+        $this->boot();
     }
 
     /** @var class-string<\FlorentPoujol\SimplePhpFramework\Container> */
@@ -57,9 +58,11 @@ final class Framework
         return $this->container;
     }
 
-    private function init(): void
+    private function boot(): void
     {
         $this->container = new $this->containerFqcn();
+
+        $this->container->setInstance(self::class, $this);
 
         $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseDirectory]);
         $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseDirectory]);
@@ -79,6 +82,8 @@ final class Framework
             );
         }
 
+        $this->container->setInstance(Route::class, $route);
+
         if ($route->isRedirect()) {
             $action = $route->getAction();
             assert(is_string($action));
@@ -87,6 +92,10 @@ final class Framework
             $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
 
             $this->sendResponseToClient(new Response($status, ['Location' => $location]));
+        }
+
+        if ($route->hasPsr15Middleware()) {
+            $this->handleRequestThroughPSR15Middleware(); // code exit here
         }
 
         $this->sendRequestThroughMiddleware($route); // code may exit here
@@ -99,12 +108,28 @@ final class Framework
     }
 
     /**
+     * @return never-return
+     */
+    public function handleRequestThroughPsr15Middleware(): void
+    {
+        /** @var \Psr\Http\Server\RequestHandlerInterface $handler */
+        $handler = $this->container->get(RequestHandlerInterface::class);
+
+        /** @var \Psr\Http\Message\ServerRequestInterface $serverRequest */
+        $serverRequest = $this->container->get(ServerRequestInterface::class);
+
+        $response = $handler->handle($serverRequest);
+
+        $this->sendResponseToClient($response);
+    }
+
+    /**
      * @return never-return|void
      */
     private function sendRequestThroughMiddleware(Route $route): void
     {
         $middleware = $route->getMiddleware();
-        if (count($middleware) === 0) {
+        if ($middleware === []) {
             return;
         }
 
@@ -119,11 +144,11 @@ final class Framework
                 assert(is_callable($_middleware));
             }
 
-            $response = $_middleware($serverRequest, $this);
+            $response = $_middleware($serverRequest, $route);
             $this->responseMiddleware[] = $_middleware;
 
             if ($response !== null) {
-                $response = $this->sendResponseThroughMiddleware($response);
+                $response = $this->sendResponseThroughMiddleware($response, $route);
 
                 $this->sendResponseToClient($response); // code exit here
             }
@@ -133,18 +158,18 @@ final class Framework
     /** @var array<callable> */
     private array $responseMiddleware = [];
 
-    private function sendResponseThroughMiddleware(ResponseInterface $response): ResponseInterface
+    private function sendResponseThroughMiddleware(ResponseInterface $response, Route $route): ResponseInterface
     {
         $middleware = array_reverse($this->responseMiddleware);
 
         foreach ($middleware as $_middleware) {
-            $response = $_middleware($response, $this) ?? $response;
+            $response = $_middleware($response, $route) ?? $response;
         }
 
         return $response;
     }
 
-    private function callRouteAction(Route $route): ResponseInterface
+    public function callRouteAction(Route $route): ResponseInterface
     {
         /** @var callable|string $action A callable or an "at" string : "Controller@method" */
         $action = $route->getAction();

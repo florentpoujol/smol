@@ -62,7 +62,9 @@ final class Router
     private function collectRoutes(): void
     {
         $files = scandir($this->baseAppPath . '/routes');
-        assert(is_array($files));
+        if (! is_array($files)) {
+            throw new SmolFrameworkException("Count not read route folder at '$this->baseAppPath . '/routes'.");
+        }
 
         foreach ($files as $path) {
             if (str_ends_with($path, '.')) {
