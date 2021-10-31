@@ -57,7 +57,7 @@ final class ViewRenderer
         // TODO make the hash from the file name or something else so that we don't have to read the original view to generate it
         //  but check how to invalide already compiled views (see how Laravel does it)
 
-        $compiledViewPath = $this->baseAppPath . "/storage/compiled-views/$hash.php";
+        $compiledViewPath = "$this->baseAppPath/storage/compiled-views/$hash.php";
         if (file_exists($compiledViewPath)) {
             return $compiledViewPath;
         }
@@ -84,7 +84,10 @@ final class ViewRenderer
 
         $viewContent = preg_replace(array_keys($patterns), array_values($patterns), $viewContent);
 
-        file_put_contents($compiledViewPath, $viewContent);
+        $success = file_put_contents($compiledViewPath, $viewContent);
+        if (! $success) {
+            throw new SmolFrameworkException("Couldn't write compiled view at path '$compiledViewPath'");
+        }
 
         return $compiledViewPath;
     }
