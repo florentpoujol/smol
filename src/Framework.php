@@ -102,7 +102,7 @@ final class Framework
 
         $response = $this->callRouteAction($route);
 
-        $response = $this->sendResponseThroughMiddleware($response);
+        $response = $this->sendResponseThroughMiddleware($response, $route);
 
         $this->sendResponseToClient($response);
     }
@@ -160,6 +160,10 @@ final class Framework
 
     private function sendResponseThroughMiddleware(ResponseInterface $response, Route $route): ResponseInterface
     {
+        if ($this->responseMiddleware === []) {
+            return $response;
+        }
+
         $middleware = array_reverse($this->responseMiddleware);
 
         foreach ($middleware as $_middleware) {

@@ -16,16 +16,18 @@ final class ViewRenderer
      */
     public function render(string $viewPath, array $variables = []): string
     {
-        if (! str_ends_with($viewPath, '.php')) {
-            $originalViewPath = $viewPath;
+        $originalViewPath = $viewPath;
+        $viewPath = "$this->baseAppPath/views/$viewPath";
 
-            $viewPath = $this->baseAppPath . "/views/$viewPath.smol.php";
+        if (! str_ends_with($viewPath, '.php')) {
+            $viewPath .= '.smol.php';
             if (! file_exists($viewPath)) {
-                $viewPath = $this->baseAppPath . "/views/$viewPath.php";
-                if (! file_exists($viewPath)) {
-                    throw new SmolFrameworkException("Couldn't find view '$originalViewPath' in path '$this->baseAppPath/views/'.");
-                }
+                $viewPath = str_replace('.smol.php', '.php', $viewPath);
             }
+        }
+
+        if (! file_exists($viewPath)) {
+            throw new SmolFrameworkException("Couldn't find view '$originalViewPath' in path '$this->baseAppPath/views/'.");
         }
 
         if (str_ends_with($viewPath, '.smol.php')) {
