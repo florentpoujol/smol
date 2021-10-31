@@ -28,7 +28,7 @@ final class Psr15RequestHandler implements RequestHandlerInterface
         /** @var class-string<\Psr\Http\Server\MiddlewareInterface> $fqcn */
         $fqcn = array_shift($this->middleware);
 
-        if ($fqcn !== null) {
+        if ($fqcn !== null) { // @phpstan-ignore-line (thinks array_shift above cannot return null)
             /** @var \Psr\Http\Server\MiddlewareInterface $instance */
             $instance = $this->framework->getContainer()->get($fqcn);
 
@@ -46,6 +46,7 @@ final class Psr15RequestHandler implements RequestHandlerInterface
         // it is then time to call the controller, then returning the response,
         // which will automatically pass it up the stack of middleware
 
+        // @phpstan-ignore-next-line (thinks the line is unreachable because array_shift above cannot return null)
         return $this->framework->callRouteAction($this->route);
     }
 

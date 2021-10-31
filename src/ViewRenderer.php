@@ -85,7 +85,7 @@ final class ViewRenderer
         $viewContent = preg_replace(array_keys($patterns), array_values($patterns), $viewContent);
 
         $success = file_put_contents($compiledViewPath, $viewContent);
-        if (! $success) {
+        if ($success === false) {
             throw new SmolFrameworkException("Couldn't write compiled view at path '$compiledViewPath'");
         }
 

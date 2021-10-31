@@ -11,6 +11,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
 
 final class Container implements ContainerInterface
@@ -21,7 +22,8 @@ final class Container implements ContainerInterface
         ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
         RequestHandlerInterface::class => Psr15RequestHandler::class,
         RequestInterface::class => Request::class,
-    ];
+        LoggerInterface::class => [ServiceFactories::class, 'makeLogger'],
+];
 
     /**
      * Values cached by get().

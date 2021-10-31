@@ -26,15 +26,14 @@ final class Framework
         return self::$instance;
     }
 
-    private string $baseDirectory;
+    private string $baseAppPath;
 
-    public function __construct(string $baseDirectory)
+    public function __construct(string $baseAppPath)
     {
-        assert(self::$instance === null);
         self::$instance = $this;
 
-        $realpath = realpath($baseDirectory);
-        $this->baseDirectory = is_string($realpath) ? $realpath : $baseDirectory;
+        $realpath = realpath($baseAppPath);
+        $this->baseAppPath = is_string($realpath) ? $realpath : $baseAppPath;
 
         $this->boot();
     }
@@ -63,11 +62,12 @@ final class Framework
         $this->container = new $this->containerFqcn();
 
         $this->container->setInstance(self::class, $this);
+        $this->container->setParameter('baseAppPath', $this->baseAppPath);
 
-        $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseDirectory]);
-        $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseDirectory]);
-        $this->container->setFactory(TranslationsRepository::class, ['baseAppPath' => $this->baseDirectory]);
-        $this->container->setFactory(ViewRenderer::class, ['baseAppPath' => $this->baseDirectory]);
+        $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseAppPath]);
+        $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseAppPath]);
+        $this->container->setFactory(TranslationsRepository::class, ['baseAppPath' => $this->baseAppPath]);
+        $this->container->setFactory(ViewRenderer::class, ['baseAppPath' => $this->baseAppPath]);
     }
 
     public function handleHttpRequest(): void
@@ -95,7 +95,7 @@ final class Framework
         }
 
         if ($route->hasPsr15Middleware()) {
-            $this->handleRequestThroughPSR15Middleware(); // code exit here
+            $this->handleRequestThroughPsr15Middleware(); // code exit here
         }
 
         $this->sendRequestThroughMiddleware($route); // code may exit here

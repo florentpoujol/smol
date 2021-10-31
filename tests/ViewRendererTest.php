@@ -71,8 +71,8 @@ final class ViewRendererTest extends TestCase
         ]);
 
         self::assertStringContainsString('no escape: simple<br>var', $viewContent);
-        self::assertStringContainsString('short escape: simple&lt;br$gt;var', $viewContent);
-        self::assertStringContainsString('long escape: simple&lt;br$gt;var', $viewContent);
+        self::assertStringContainsString('short escape: simple&lt;br&gt;var', $viewContent);
+        self::assertStringContainsString('long escape: simple&lt;br&gt;var', $viewContent);
 
         self::assertStringContainsString('inside for array: value1', $viewContent);
         self::assertStringContainsString('inside for array: 2', $viewContent);

@@ -178,6 +178,7 @@ final class Route
         return
             is_string($mid)
             && class_exists($mid)
+            && is_array(class_implements($mid))
             && in_array(MiddlewareInterface::class, class_implements($mid), true);
     }
 }
