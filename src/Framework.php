@@ -72,37 +72,46 @@ final class Framework
 
     public function handleHttpRequest(): void
     {
-        /** @var \FlorentPoujol\SimplePhpFramework\Router $router */
-        $router = $this->container->get(Router::class);
-        $route = $router->resolveRoute();
+        try {
+            /** @var \FlorentPoujol\SimplePhpFramework\Router $router */
+            $router = $this->container->get(Router::class);
+            $route = $router->resolveRoute();
 
-        if ($route === null) {
-            $this->sendResponseToClient(
-                new Response(404, body: $_SERVER['REQUEST_URI'] . ' not found')
-            );
+            if ($route === null) {
+                $this->sendResponseToClient(
+                    new Response(404, body: $_SERVER['REQUEST_URI'] . ' not found')
+                );
+            }
+
+            $this->container->setInstance(Route::class, $route);
+
+            if ($route->isRedirect()) {
+                $action = $route->getAction();
+                assert(is_string($action));
+
+                $status = str_starts_with($action, 'redirect-permanent:') ? 301 : 302;
+                $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
+
+                $this->sendResponseToClient(new Response($status, ['Location' => $location]));
+            }
+
+            if ($route->hasPsr15Middleware()) {
+                $this->handleRequestThroughPsr15Middleware(); // code exit here
+            }
+
+            $this->sendRequestThroughMiddleware($route); // code may exit here
+
+            $response = $this->callRouteAction($route);
+
+            $response = $this->sendResponseThroughMiddleware($response, $route);
+        } catch (\Throwable $exception) {
+            /** @var \FlorentPoujol\SimplePhpFramework\ExceptionHandler $exceptionHandler */
+            $exceptionHandler = $this->container->get(ExceptionHandler::class);
+
+            $exceptionHandler->report($exception);
+
+            $response = $exceptionHandler->render($exception);
         }
-
-        $this->container->setInstance(Route::class, $route);
-
-        if ($route->isRedirect()) {
-            $action = $route->getAction();
-            assert(is_string($action));
-
-            $status = str_starts_with($action, 'redirect-permanent:') ? 301 : 302;
-            $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
-
-            $this->sendResponseToClient(new Response($status, ['Location' => $location]));
-        }
-
-        if ($route->hasPsr15Middleware()) {
-            $this->handleRequestThroughPsr15Middleware(); // code exit here
-        }
-
-        $this->sendRequestThroughMiddleware($route); // code may exit here
-
-        $response = $this->callRouteAction($route);
-
-        $response = $this->sendResponseThroughMiddleware($response, $route);
 
         $this->sendResponseToClient($response);
     }
