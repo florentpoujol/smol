@@ -13,7 +13,7 @@ final class LoggerTest extends TestCase
     {
         $logger = new DailyFileLogger(__DIR__ . '/Fixtures/Logs');
 
-        $filePath = __DIR__ . '/Fixtures/Logs/storage/logs/log-' . date('Y-m-d') . '.log';
+        $filePath = __DIR__ . '/Fixtures/Logs/storage/git-ignored/logs/log-' . date('Y-m-d') . '.log';
         @unlink($filePath);
 
         $logger->info('the_message', ['the' => 'context']);

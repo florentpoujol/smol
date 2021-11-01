@@ -54,10 +54,7 @@ final class ViewRenderer
         }
 
         $hash = md5($viewContent);
-        // TODO make the hash from the file name or something else so that we don't have to read the original view to generate it
-        //  but check how to invalide already compiled views (see how Laravel does it)
-
-        $compiledViewPath = "$this->baseAppPath/storage/compiled-views/$hash.php";
+        $compiledViewPath = "$this->baseAppPath/storage/git-ignored/compiled-views/$hash.php";
         if (file_exists($compiledViewPath)) {
             return $compiledViewPath;
         }

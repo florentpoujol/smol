@@ -3,5 +3,4 @@ composer.phar
 /.idea/
 .phpunit.result.cache
 .php-cs-fixer.cache
-tests/Fixtures/Views/storage/compiled-views
-tests/Fixtures/Logs/storage/logs
+git-ignored/

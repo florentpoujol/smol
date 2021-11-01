@@ -12,7 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 final class Framework
 {
-    private static ?self $instance = null;
+    private static self $instance;
 
     public static function make(string $baseDirectory): self
     {
@@ -21,8 +21,6 @@ final class Framework
 
     public static function getInstance(): self
     {
-        assert(self::$instance !== null);
-
         return self::$instance;
     }
 

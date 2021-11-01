@@ -23,7 +23,7 @@ final class DailyFileLogger extends AbstractLogger
     public function log($level, Stringable|string $message, array $context = []): void
     {
         $date = date('Y-m-d');
-        $filePath = "$this->baseAppPath/storage/logs/log-$date.log";
+        $filePath = "$this->baseAppPath/storage/git-ignored/logs/log-$date.log";
         if (! file_exists($filePath)) {
             touch($filePath);
         }

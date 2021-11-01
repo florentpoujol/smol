@@ -39,7 +39,7 @@ final class ViewRendererTest extends TestCase
 
     private function cleanUpCompiledViews(): void
     {
-        $basePath = __DIR__ . '/Fixtures/Views/storage/compiled-views/';
+        $basePath = __DIR__ . '/Fixtures/Views/storage/git-ignored/compiled-views/';
         $files = scandir($basePath);
         assert(is_array($files));
 

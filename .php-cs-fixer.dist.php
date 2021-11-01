@@ -6,7 +6,7 @@ $finder = Symfony\Component\Finder\Finder::create()
         __DIR__ . '/tests',
     ])
     ->exclude([
-        'Fixtures/Views/storage/compiled-views',
+        'Fixtures/Views/storage/git-ignored/compiled-views',
     ])
     ->name('*.php');
 

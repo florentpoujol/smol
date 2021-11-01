@@ -73,13 +73,6 @@ final class ConfigRepository
             return;
         }
 
-        $cacheFilePath = $this->baseAppPath . '/storage/frameworkCache/config.cache.php';
-        if (file_exists($cacheFilePath)) {
-            $this->config = require $cacheFilePath;
-
-            return;
-        }
-
         $this->readEnvFile();
 
         $this->config = ['cache_map' => []];
