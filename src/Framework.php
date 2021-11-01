@@ -111,14 +111,14 @@ final class Framework
                 $status = str_starts_with($action, 'redirect-permanent:') ? 301 : 302;
                 $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
 
-                $this->sendResponseToClient(new Response($status, ['Location' => $location]));
+                $this->sendResponseToClient(new Response($status, ['Location' => $location])); // app exit here
             }
 
             if ($route->hasPsr15Middleware()) {
-                $this->handleRequestThroughPsr15Middleware(); // code exit here
+                $this->handleRequestThroughPsr15Middleware(); // app exit here
             }
 
-            $this->sendRequestThroughMiddleware($route); // code may exit here
+            $this->sendRequestThroughMiddleware($route); // app *may* exit here
 
             $response = $this->callRouteAction($route);
 
@@ -146,9 +146,9 @@ final class Framework
         /** @var \Psr\Http\Message\ServerRequestInterface $serverRequest */
         $serverRequest = $this->container->get(ServerRequestInterface::class);
 
-        $response = $handler->handle($serverRequest);
+        $response = $handler->handle($serverRequest); // see in the handle method for explanation as to why this single like does everything and return the final response, whatever happens in between
 
-        $this->sendResponseToClient($response);
+        $this->sendResponseToClient($response); // app exit here
     }
 
     /**

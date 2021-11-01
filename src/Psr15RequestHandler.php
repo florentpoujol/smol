@@ -34,17 +34,17 @@ final class Psr15RequestHandler implements RequestHandlerInterface
 
             return $instance->process($request, $this);
 
-            // the trick here is that we are passing this handler instance to all middleware
-            // so this method will be called multiple times, each time removing a middleware from the stack
+            // The trick here is that we are passing this handler instance to all middleware.
+            // So this method will be called multiple times, each time removing a middleware from the stack.
 
-            // if a middleware returns a response without passing the request to the handler
+            // If a middleware returns a response without passing the request to the handler
             // the code below never gets called and the response naturally bubble up
-            // the stack of middleware that have ran
+            // the stack of middleware that have run, up to Framework::handleRequestThroughPsr15Middleware().
         }
 
-        // if we are here, we did get through all middleware
-        // it is then time to call the controller, then returning the response,
-        // which will automatically pass it up the stack of middleware
+        // If we are here, we did get through all middleware.
+        // It is then time to call the controller, then returning the response,
+        // which will automatically pass it up the stack of middleware that have run, up to Framework::handleRequestThroughPsr15Middleware().
 
         // @phpstan-ignore-next-line (thinks the line is unreachable because array_shift above cannot return null)
         return $this->framework->callRouteAction($this->route);
