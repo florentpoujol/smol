@@ -47,6 +47,8 @@ final class Container implements ContainerInterface
      */
     public function __construct(array $services = null, array $parameters = null)
     {
+        $this->instances[ContainerInterface::class] = $this;
+
         if ($services !== null) {
             $this->factories = $services;
         }
