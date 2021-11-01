@@ -9,7 +9,6 @@ use Nyholm\Psr7\Response;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Log\LoggerInterface;
 
 final class ServiceFactories
 {
@@ -30,10 +29,5 @@ final class ServiceFactories
     public static function makeResponse(): ResponseInterface
     {
         return new Response();
-    }
-
-    public static function makeLogger(Container $container): LoggerInterface
-    {
-        return new DailyFileLogger($container->getParameter('baseAppPath'));
     }
 }

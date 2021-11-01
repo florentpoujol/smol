@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SmolFramework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\Container\Container;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -14,9 +14,12 @@ final class Framework
 {
     private static self $instance;
 
-    public static function make(string $baseDirectory): self
+    /**
+     * @param  array<string, string> $config
+     */
+    public static function make(array $config): self
     {
-        return new self($baseDirectory);
+        return new self($config);
     }
 
     public static function getInstance(): self
@@ -24,43 +27,55 @@ final class Framework
         return self::$instance;
     }
 
-    private string $baseAppPath;
-
-    public function __construct(string $baseAppPath)
+    public function __construct(array $config)
     {
         self::$instance = $this;
 
-        $realpath = realpath($baseAppPath);
-        $this->baseAppPath = is_string($realpath) ? $realpath : $baseAppPath;
-
-        $this->boot();
+        $this->config = array_merge($this->config, $config);
     }
 
-    /** @var class-string<\FlorentPoujol\SmolFramework\Container> */
-    private string $containerFqcn = Container::class;
-    private Container $container;
+    // --------------------------------------------------
+    // config stuffs
 
-    /**
-     * @param class-string<\FlorentPoujol\SmolFramework\Container> $containerFqcn
-     */
-    public function setContainerFqcn(string $containerFqcn): self
+    /** @var array<string, string> */
+    private array $config = [
+        'baseAppPath' => __DIR__,
+        'container_fqcn' => Container::class,
+        'environment' => 'production',
+    ];
+
+    public function getConfig(string $key, string $default = null): ?string
     {
-        $this->containerFqcn = $containerFqcn;
+        return $this->config[$key] ?? $default;
+    }
+
+    public function setConfig(string $key, ?string $value): self
+    {
+        $this->config[$key] = $value;
 
         return $this;
     }
+
+    // --------------------------------------------------
+    // boot stuffs
+
+    private Container $container;
 
     public function getContainer(): Container
     {
         return $this->container;
     }
 
+    private bool $booted = false;
+
     private function boot(): void
     {
-        $this->container = new $this->containerFqcn();
+        if ($this->booted) {
+            return;
+        }
 
+        $this->container = new $this->config['container_fqcn']();
         $this->container->setInstance(self::class, $this);
-        $this->container->setParameter('baseAppPath', $this->baseAppPath);
 
         $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseAppPath]);
         $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseAppPath]);
@@ -68,8 +83,13 @@ final class Framework
         $this->container->setFactory(ViewRenderer::class, ['baseAppPath' => $this->baseAppPath]);
     }
 
+    // --------------------------------------------------
+    // HTTP request stuffs
+
     public function handleHttpRequest(): void
     {
+        $this->boot();
+
         try {
             /** @var \FlorentPoujol\SmolFramework\Router $router */
             $router = $this->container->get(Router::class);
