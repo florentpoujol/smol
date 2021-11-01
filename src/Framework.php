@@ -77,10 +77,11 @@ final class Framework
         $this->container = new $this->config['container_fqcn']();
         $this->container->setInstance(self::class, $this);
 
-        $this->container->setFactory(Router::class, ['baseAppPath' => $this->baseAppPath]);
-        $this->container->setFactory(ConfigRepository::class, ['baseAppPath' => $this->baseAppPath]);
-        $this->container->setFactory(TranslationsRepository::class, ['baseAppPath' => $this->baseAppPath]);
-        $this->container->setFactory(ViewRenderer::class, ['baseAppPath' => $this->baseAppPath]);
+        foreach ($this->config as $key => $value) {
+            $this->container->setParameter($key, $value);
+        }
+
+        $this->booted = true;
     }
 
     // --------------------------------------------------

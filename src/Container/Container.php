@@ -214,10 +214,17 @@ final class Container implements ContainerInterface
             }
 
             if ($typeName === '' || $typeIsBuiltin) {
-                // no type hint or not an object
-                if ($isParamMandatory) {
-                    throw new Exception("Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in type '$typeName' but value is not manually specified in the container.");
+                // no type hint or not an object, so try to get a value from the parameters
+                $value = $this->parameters[$paramName] ?? null;
+
+                if ($value === null && ! $typeIsNullable && $isParamMandatory) {
+                    throw new ContainerException(
+                        "Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in" .
+                        " type '$typeName' but value is not manually specified in the container or the extra arguments."
+                    );
                 }
+
+                $args[] = $value;
 
                 continue;
             }
