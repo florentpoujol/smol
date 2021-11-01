@@ -5,6 +5,9 @@ $finder = Symfony\Component\Finder\Finder::create()
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ])
+    ->exclude([
+        'Fixtures/Views/storage/compiled-views',
+    ])
     ->name('*.php');
 
 return (new PhpCsFixer\Config())
