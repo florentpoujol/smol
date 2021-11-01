@@ -189,8 +189,16 @@ final class Container implements ContainerInterface
             $typeIsNullable = false;
             $type = $param->getType();
 
-            if (isset($manualArguments[$paramName])) {
-                $value = $manualArguments[$paramName];
+            if ($type instanceof ReflectionUnionType) {
+                throw new ContainerException("Can't autowire argument '$paramName' of service '$classFqcn' because it has union type.");
+            } elseif ($type instanceof ReflectionNamedType) {
+                $typeName = $type->getName();
+                $typeIsBuiltin = $type->isBuiltin();
+                $typeIsNullable = $type->allowsNull();
+            } // else is null (no type specified)
+
+            if (isset($extraArguments[$paramName])) {
+                $value = $extraArguments[$paramName];
 
                 if (is_string($value)) {
                     if ($value[0] === '@') { // service reference
