@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Container;
 
-use Exception;
+use FlorentPoujol\SmolFramework\DailyFileLogger;
+use FlorentPoujol\SmolFramework\Psr15RequestHandler;
+use FlorentPoujol\SmolFramework\ServiceFactories;
 use Nyholm\Psr7\Request;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
@@ -12,18 +14,19 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
-use UnexpectedValueException;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 final class Container implements ContainerInterface
 {
-    /** @var array<string|class-string, callable|string|array> */
+    /** @var array<class-string, callable|string|array> */
     private array $factories = [
         ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
         ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
         RequestHandlerInterface::class => Psr15RequestHandler::class,
-        RequestInterface::class => Request::class,
-        LoggerInterface::class => [ServiceFactories::class, 'makeLogger'],
-];
+        RequestInterface::class => Request::class, // client request
+        LoggerInterface::class => DailyFileLogger::class,
+    ];
 
     /**
      * Values cached by get().
@@ -34,7 +37,7 @@ final class Container implements ContainerInterface
     private array $instances = [];
 
     /**
-     * @var array<string|class-string, mixed>
+     * @var array<string|class-string, mixed> $Key match
      */
     private array $parameters = [];
 
@@ -100,37 +103,43 @@ final class Container implements ContainerInterface
         $value = $this->make($id);
         $this->instances[$id] = $value;
 
+        if ($value === null) {
+            throw new NotFoundException("'$id' couldn't be resolved");
+        }
+
         return $value;
     }
 
     /**
      * Returns a new instance of object or call again a callable.
      *
-     * @throws \Exception when a service name couldn't be resolved
+     * @param array<string, mixed> $extraArguments
+     *
+     * @throws \FlorentPoujol\SmolFramework\Container\NotFoundException when a service name couldn't be resolved
      */
-    public function make(string $serviceName): ?object
+    public function make(string $serviceName, array $extraArguments = []): ?object
     {
         if (! isset($this->factories[$serviceName])) {
             if (class_exists($serviceName)) {
-                return $this->createObject($serviceName);
+                return $this->createObject($serviceName, $extraArguments);
             }
 
-            throw new Exception("Service '$serviceName' not found.");
+            throw new ContainerException("Factory for service '$serviceName' not found.");
         }
 
         $value = $this->factories[$serviceName];
 
         // check if is a callable first, because callables can be string or array, too
         if (is_callable($value)) {
-            return $value($this);
+            return $value($this, $extraArguments);
         }
 
         if (is_array($value)) {
             // $serviceName is a concrete class name, $value is class constructor description
-            return $this->createObject($serviceName, $value); // @phpstan-ignore-line
+            return $this->createObject($serviceName, array_merge($value, $extraArguments)); // @phpstan-ignore-line
         }
 
-        // $serviceName is a class name or alias to other service
+        // typically, $serviceName is an interface or alias to other service
 
         // resolve alias as deep as possible
         $valueChanged = false;
@@ -138,29 +147,29 @@ final class Container implements ContainerInterface
             $value = $this->factories[$value];
 
             if (! is_string($value)) {
-                throw new Exception();
+                throw new ContainerException();
             }
             $valueChanged = true;
         }
 
         if ($valueChanged) {
-            return $this->make($value);
+            return $this->make($value, $extraArguments);
         }
 
         if (class_exists($value)) {
-            return $this->createObject($value);
+            return $this->createObject($value, $extraArguments);
         }
 
-        throw new UnexpectedValueException("Service '$serviceName' resolve to a string value '$value' that is neither another known service nor a class name.");
+        throw new ContainerException("Service '$serviceName' resolve to a string value '$value' that is neither another known service nor a class name.");
     }
 
     /**
      * @param class-string         $classFqcn
-     * @param array<string, mixed> $manualArguments
+     * @param array<string, mixed> $extraArguments
      *
      * @throws \Exception
      */
-    private function createObject(string $classFqcn, array $manualArguments = []): ?object
+    private function createObject(string $classFqcn, array $extraArguments = []): ?object
     {
         $class = new \ReflectionClass($classFqcn);
         $constructor = $class->getConstructor();
@@ -177,22 +186,17 @@ final class Container implements ContainerInterface
 
             $typeName = '';
             $typeIsBuiltin = false;
+            $typeIsNullable = false;
             $type = $param->getType();
-            if ($type !== null) {
-                $typeName = (string) $type;
-                $typeIsBuiltin = $type->isBuiltin(); // @phpstan-ignore-line (doesn't know isBuiltin() ?)
-            }
 
             if (isset($manualArguments[$paramName])) {
                 $value = $manualArguments[$paramName];
 
                 if (is_string($value)) {
                     if ($value[0] === '@') { // service reference
-                        $value = $this->make(str_replace('@', '', $value));
-                    // shoudn't make() be called here when createObject() is called from make() ?
-                        // could allow user to prepend service name with @@ instead of @ to use either get or make
+                        $value = $this->get(str_replace('@', '', $value));
                     } elseif ($value[0] === '%') { // parameter reference
-                        $value = $this->getParameter(str_replace('%', '', $value));
+                        $value = $this->parameters[str_replace('%', '', $value)];
                     }
                 }
 
@@ -212,20 +216,25 @@ final class Container implements ContainerInterface
 
             // param is a class or interface (internal or userland)
             if (interface_exists($typeName) && ! $this->has($typeName)) {
-                throw new Exception("Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface '$typeName' but no alias for it is set in the container.");
+                throw new ContainerException(
+                    "Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface " .
+                    "'$typeName' but no alias for it is set in the container."
+                );
             }
 
-            $object = null;
-
+            $instance = null;
             if ($isParamMandatory) {
                 try {
-                    $object = $this->get($typeName);
-                } catch (Exception $exception) {
-                    throw new Exception("Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' but the container don't know how to resolve it.");
+                    $instance = $this->get($typeName);
+                } catch (ContainerException $exception) {
+                    throw new ContainerException(
+                        "Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' " .
+                        " but the container don't know how to resolve it."
+                    );
                 }
             }
 
-            $args[] = $object;
+            $args[] = $instance;
         }
 
         return new $classFqcn(...$args);
