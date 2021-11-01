@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SimplePhpFramework;
+namespace FlorentPoujol\SmolFramework;
 
 final class Router
 {
-    /** @var array<string, array<string, array<\FlorentPoujol\SimplePhpFramework\Route>>> Routes instances by HTTP methods and prefixes */
+    /** @var array<string, array<string, array<\FlorentPoujol\SmolFramework\Route>>> Routes instances by HTTP methods and prefixes */
     private array $routes = [
         // HTTP method => [
         //     /prefix => [
@@ -16,7 +16,7 @@ final class Router
         // ]
     ];
 
-    /** @var array<string, \FlorentPoujol\SimplePhpFramework\Route> */
+    /** @var array<string, \FlorentPoujol\SmolFramework\Route> */
     private array $routesByName = [];
 
     public function __construct(
@@ -74,7 +74,7 @@ final class Router
             $filename = str_replace('.php', '', $path);
             $routes = require $this->baseAppPath . '/routes/' . $path;
 
-            /** @var \FlorentPoujol\SimplePhpFramework\Route $route */
+            /** @var \FlorentPoujol\SmolFramework\Route $route */
             foreach ($routes as $route) {
                 if ($route->getName() !== null) {
                     $this->routesByName[$route->getName()] = $route; // used for URL generation

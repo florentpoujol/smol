@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SimplePhpFramework;
+namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SimplePhpFramework\ConfigRepository;
+use FlorentPoujol\SmolFramework\ConfigRepository;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigRepositoryTest extends TestCase

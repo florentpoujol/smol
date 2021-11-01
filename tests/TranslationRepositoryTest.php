@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SimplePhpFramework;
+namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SimplePhpFramework\ConfigRepository;
-use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\ConfigRepository;
+use FlorentPoujol\SmolFramework\Translations\TranslationsRepository;
 use PHPUnit\Framework\TestCase;
 
 final class TranslationRepositoryTest extends TestCase

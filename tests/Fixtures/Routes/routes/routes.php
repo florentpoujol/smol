@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SimplePhpFramework\Route;
-use Tests\FlorentPoujol\SimplePhpFramework\Fixtures\Routes\TestMiddleware1;
-use Tests\FlorentPoujol\SimplePhpFramework\Fixtures\Routes\TestMiddleware2;
+use FlorentPoujol\SmolFramework\Route;
+use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware1;
+use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware2;
 
 return [
     new Route('get', '/get/static-route', 'nothing'),

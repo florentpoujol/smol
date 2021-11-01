@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SimplePhpFramework;
+namespace FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\Translations\TranslationsRepository;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -38,12 +38,12 @@ final class Framework
         $this->boot();
     }
 
-    /** @var class-string<\FlorentPoujol\SimplePhpFramework\Container> */
+    /** @var class-string<\FlorentPoujol\SmolFramework\Container> */
     private string $containerFqcn = Container::class;
     private Container $container;
 
     /**
-     * @param class-string<\FlorentPoujol\SimplePhpFramework\Container> $containerFqcn
+     * @param class-string<\FlorentPoujol\SmolFramework\Container> $containerFqcn
      */
     public function setContainerFqcn(string $containerFqcn): self
     {
@@ -73,7 +73,7 @@ final class Framework
     public function handleHttpRequest(): void
     {
         try {
-            /** @var \FlorentPoujol\SimplePhpFramework\Router $router */
+            /** @var \FlorentPoujol\SmolFramework\Router $router */
             $router = $this->container->get(Router::class);
             $route = $router->resolveRoute();
 
@@ -105,7 +105,7 @@ final class Framework
 
             $response = $this->sendResponseThroughMiddleware($response, $route);
         } catch (\Throwable $exception) {
-            /** @var \FlorentPoujol\SimplePhpFramework\ExceptionHandler $exceptionHandler */
+            /** @var \FlorentPoujol\SmolFramework\ExceptionHandler $exceptionHandler */
             $exceptionHandler = $this->container->get(ExceptionHandler::class);
 
             $exceptionHandler->report($exception);

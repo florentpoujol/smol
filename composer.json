@@ -1,18 +1,18 @@
 {
-    "name": "florentpoujol/simple-php-framework",
+    "name": "florentpoujol/smol-framwork",
     "license": "MIT",
     "type": "project",
-    "description": "A simple, bare-bones yet full featured PHP framework",
+    "description": "A lean but full-featured framework for PHP 8.0+",
     "autoload": {
         "files": ["src/helpers.php"],
         "psr-4" : {
-            "FlorentPoujol\\SimplePhpFramework\\" : "src/"
+            "FlorentPoujol\\SmolFramework\\" : "src/"
         }
     },
     "autoload-dev": {
         "files": ["src/helpers.php"],
         "psr-4" : {
-            "Tests\\FlorentPoujol\\SimplePhpFramework\\" : "tests/"
+            "Tests\\FlorentPoujol\\SmolFramework\\" : "tests/"
         }
     },
     "require": {

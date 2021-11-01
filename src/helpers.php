@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SimplePhpFramework\Framework;
-use FlorentPoujol\SimplePhpFramework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\Framework;
+use FlorentPoujol\SmolFramework\Translations\TranslationsRepository;
 
 if (! function_exists('env')) {
     function env(string $key, mixed $default = null): mixed

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SimplePhpFramework;
+namespace FlorentPoujol\SmolFramework;
 
 use Exception;
 use Nyholm\Psr7\Request;

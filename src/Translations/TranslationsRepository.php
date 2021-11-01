@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SimplePhpFramework\Translations;
+namespace FlorentPoujol\SmolFramework\Translations;
 
-use FlorentPoujol\SimplePhpFramework\ConfigRepository;
+use FlorentPoujol\SmolFramework\ConfigRepository;
 
 final class TranslationsRepository
 {

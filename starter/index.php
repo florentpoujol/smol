@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SimplePhpFramework\Framework;
+use FlorentPoujol\SmolFramework\Framework;
 
 require __DIR__ . '/../vendor/autoload.php';
 

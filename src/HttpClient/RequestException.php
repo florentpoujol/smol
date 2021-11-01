@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SimplePhpFramework\HttpClient;
+namespace FlorentPoujol\SmolFramework\HttpClient;
 
 use Psr\Http\Client\RequestExceptionInterface;
 use Psr\Http\Message\RequestInterface;
