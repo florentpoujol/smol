@@ -15,7 +15,7 @@ final class Framework
     private static self $instance;
 
     /**
-     * @param  array<string, string> $config
+     * @param array<string, null|string> $config
      */
     public static function make(array $config): self
     {
@@ -27,6 +27,9 @@ final class Framework
         return self::$instance;
     }
 
+    /**
+     * @param array<string, null|string> $config
+     */
     public function __construct(array $config)
     {
         self::$instance = $this;
@@ -37,7 +40,7 @@ final class Framework
     // --------------------------------------------------
     // config stuffs
 
-    /** @var array<string, string> */
+    /** @var array<string, null|string> */
     private array $config = [
         'baseAppPath' => __DIR__,
         'container_fqcn' => Container::class,

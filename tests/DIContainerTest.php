@@ -16,6 +16,7 @@ final class DIContainerTest extends TestCase
         $container = new Container();
         $container->setParameter('baseAppPath', __DIR__ . '/Fixtures/Container');
 
+        /** @var LoggerInterface $logger */
         $logger = $container->get(LoggerInterface::class);
 
         $date = date('Y-m-d');

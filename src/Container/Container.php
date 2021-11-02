@@ -37,20 +37,20 @@ final class Container implements ContainerInterface
     private array $instances = [];
 
     /**
-     * @var array<string|class-string, mixed> $Key match
+     * @var array<string|class-string, mixed> match
      */
     private array $parameters = [];
 
     /**
-     * @param array<string, string> $services
-     * @param array<string, mixed>  $parameters
+     * @param array<class-string, callable|string|array> $factories
+     * @param array<string, mixed>                       $parameters
      */
-    public function __construct(array $services = null, array $parameters = null)
+    public function __construct(array $factories = null, array $parameters = null)
     {
         $this->instances[ContainerInterface::class] = $this;
 
-        if ($services !== null) {
-            $this->factories = $services;
+        if ($factories !== null) {
+            $this->factories = $factories;
         }
 
         if ($parameters !== null) {
@@ -69,7 +69,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string|string                              $serviceName
+     * @param class-string                                     $serviceName
      * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
@@ -193,7 +193,8 @@ final class Container implements ContainerInterface
 
             if ($type instanceof ReflectionUnionType) {
                 throw new ContainerException("Can't autowire argument '$paramName' of service '$classFqcn' because it has union type.");
-            } elseif ($type instanceof ReflectionNamedType) {
+            }
+            if ($type instanceof ReflectionNamedType) {
                 $typeName = $type->getName();
                 $typeIsBuiltin = $type->isBuiltin();
                 $typeIsNullable = $type->allowsNull();
@@ -220,10 +221,7 @@ final class Container implements ContainerInterface
                 $value = $this->parameters[$paramName] ?? null;
 
                 if ($value === null && ! $typeIsNullable && $isParamMandatory) {
-                    throw new ContainerException(
-                        "Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in" .
-                        " type '$typeName' but value is not manually specified in the container or the extra arguments."
-                    );
+                    throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in" . " type '$typeName' but value is not manually specified in the container or the extra arguments.");
                 }
 
                 $args[] = $value;
@@ -233,10 +231,7 @@ final class Container implements ContainerInterface
 
             // param is a class or interface (internal or userland)
             if (interface_exists($typeName) && ! $this->has($typeName)) {
-                throw new ContainerException(
-                    "Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface " .
-                    "'$typeName' but no alias for it is set in the container."
-                );
+                throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface " . "'$typeName' but no alias for it is set in the container.");
             }
 
             $instance = null;
@@ -244,10 +239,7 @@ final class Container implements ContainerInterface
                 try {
                     $instance = $this->get($typeName);
                 } catch (ContainerException $exception) {
-                    throw new ContainerException(
-                        "Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' " .
-                        " but the container don't know how to resolve it."
-                    );
+                    throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' " . " but the container don't know how to resolve it.");
                 }
             }
 
