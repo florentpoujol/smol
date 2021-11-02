@@ -80,4 +80,20 @@ final class ViewRendererTest extends TestCase
         self::assertStringContainsString('inside for object: property1', $viewContent);
         self::assertStringContainsString('inside for object: 2', $viewContent);
     }
+
+    public function test_extending_template(): void
+    {
+        $this->cleanUpCompiledViews();
+
+        $rendered = new ViewRenderer(__DIR__ . '/Fixtures/Views');
+
+        $viewContent = $rendered->render('child');
+
+        self::assertStringContainsString('the child head', $viewContent);
+        self::assertStringContainsString('the child content', $viewContent);
+        self::assertStringContainsString('the parent footer', $viewContent);
+
+        self::assertStringNotContainsString('{%', $viewContent);
+        self::assertStringNotContainsString('%}', $viewContent);
+    }
 }

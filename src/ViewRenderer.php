@@ -59,6 +59,42 @@ final class ViewRenderer
             return $compiledViewPath;
         }
 
+        // --------------------------------------------------
+        // deal with extending parents
+
+        $extendsPattern = '/{%\s*extends\s+("|\')?(?<parent>[a-zA-Z-0-9_\.\/-]+)("|\')?\s*%}/';
+        $matches = [];
+        if (preg_match($extendsPattern, $viewContent, $matches) === 1) {
+            $parentPath = "$this->baseAppPath/views/$matches[parent].smol.php";
+            $parentContent = file_get_contents($parentPath);
+            if (! is_string($parentContent)) {
+                throw new SmolFrameworkException("Can't read parent view at path '$parentPath'.");
+            }
+
+            // first collect the content of each block in the child
+            $blockPattern = '/{%\s*block\s+(?<blockname>[a-zA-Z0-9_-]+)\s*%}(?<blockcontent>.+){%\s*endblock\s*%}/sU'; // s= . match newline, U = ungreedy quantifiers
+            $matches = [];
+            preg_match_all($blockPattern, $viewContent, $matches);
+            $childBlocks = array_combine(array_values($matches['blockname']), array_values($matches['blockcontent']));
+
+            // then do the same in parents and swap the ones that exists in both
+            $parentBlocks = [];
+            preg_match_all($blockPattern, $parentContent, $parentBlocks);
+
+            foreach ($childBlocks as $blockName => $childBlockContentWithoutTag) {
+                // the blocks in the parent may not be (or matched) in the same order as in the children
+                $matchedParentBlockId = array_search($blockName, $parentBlocks['blockname'], true);
+                $parentBlockWithTagsAndDefaultValue = $parentBlocks[0][$matchedParentBlockId];
+
+                $parentContent = str_replace($parentBlockWithTagsAndDefaultValue, $childBlockContentWithoutTag, $parentContent);
+            }
+
+            $viewContent = $parentContent;
+        }
+
+        // --------------------------------------------------
+        // now that we have reunited the parent and children, we can replace all the stuffs
+
         $patterns = [ // search => replace
             // {{ something }}
             '/{{\s*([a-zA-z0-9_-]+)\s*}}/' => '<?= \$$1; ?>',
@@ -75,6 +111,10 @@ final class ViewRenderer
 
             // {# comment #}
             '/{#[^#]*#}/' => '',
+
+            // remaining blocks, not replaced by child template
+            '/{%\s*block\s+[a-zA-Z0-9_-]+\s*%}/' => '',
+            '/{%\s*endblock\s*%}/' => '',
 
             // TODO add more syntax : ifs, numerical for, some more filters
         ];
