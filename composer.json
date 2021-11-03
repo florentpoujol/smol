@@ -17,6 +17,7 @@
     },
     "require": {
         "php": "^8.0",
+        "ext-pdo": "*",
         "ext-curl": "*",
         "nyholm/psr7": "^1.4",
         "nyholm/psr7-server": "^1.0",
