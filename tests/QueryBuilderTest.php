@@ -10,15 +10,11 @@ use PHPUnit\Framework\TestCase;
 
 final class QueryBuilderTest extends TestCase
 {
-    private static PDO $spdo;
-
-    private PDO $pdo;
-
-    private QueryBuilder $builder;
+    private static PDO $pdo;
 
     public static function setUpBeforeClass(): void
     {
-        self::$spdo = new PDO('sqlite::memory:', null, null, [
+        self::$pdo = new PDO('sqlite::memory:', null, null, [
             PDO::ERRMODE_EXCEPTION => true,
         ]);
 
@@ -31,21 +27,14 @@ final class QueryBuilderTest extends TestCase
         )
         SQL;
 
-        self::$spdo->exec($createTable);
-    }
-
-    protected function setUp(): void
-    {
-        $this->pdo = self::$spdo;
-
-        $this->builder = new QueryBuilder($this->pdo);
+        self::$pdo->exec($createTable);
     }
 
     public function test_insert(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query
-            ->insert(['name', 'email', 'created_at'])
+            ->insertMany(['name', 'email', 'created_at'])
             ->fromTable('test');
 
         $expected = 'INSERT INTO test (name, email, created_at) VALUES (:name, :email, :created_at)';
@@ -59,17 +48,17 @@ final class QueryBuilderTest extends TestCase
         $id = $query->execute($data);
         self::assertSame('1', $id);
 
-        $entry = $this->pdo->query('SELECT * FROM test')->fetch();
+        $entry = self::$pdo->query('SELECT * FROM test')->fetch();
         self::assertSame('1', $entry['id']);
         self::assertSame('Florent', $entry['name']);
 
         // data passed to insert()
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $data = [
             'name' => 'Florent2',
             'created_at' => 'NOW()',
         ];
-        $query->insert($data)->fromTable('test');
+        $query->insertMany($data)->fromTable('test');
 
         $expected = 'INSERT INTO test (name, created_at) VALUES (:name, :created_at)';
         self::assertSame($expected, $query->toSql());
@@ -77,13 +66,13 @@ final class QueryBuilderTest extends TestCase
         $id = $query->execute();
         self::assertSame('2', $id);
 
-        $entry = $this->pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
+        $entry = self::$pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
         self::assertSame('2', $entry['id']);
         self::assertSame('Florent2', $entry['name']);
 
         // data passed to execute()
-        $query = new QueryBuilder($this->pdo);
-        $query->insert(['name', 'email', 'created_at'])->fromTable('test');
+        $query = new QueryBuilder(self::$pdo);
+        $query->insertMany(['name', 'email', 'created_at'])->fromTable('test');
 
         $expected = 'INSERT INTO test (name, email, created_at) VALUES (:name, :email, :created_at)';
         self::assertSame($expected, $query->toSql());
@@ -100,7 +89,7 @@ final class QueryBuilderTest extends TestCase
 
         self::assertSame('3', $id);
 
-        $entry = $this->pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
+        $entry = self::$pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
         self::assertSame('3', $entry['id']);
         self::assertSame('Florent3', $entry['name']);
     }
@@ -117,9 +106,9 @@ final class QueryBuilderTest extends TestCase
                 'email' => 'flo@flo.fr',
             ],
         ];
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $id = $query
-            ->insert($data)
+            ->insertMany($data)
             ->fromTable('test')
             ->execute();
 
@@ -129,7 +118,7 @@ final class QueryBuilderTest extends TestCase
         // $id = $query->execute($data);
         self::assertSame('5', $id);
 
-        $entries = $this->pdo->query('SELECT * FROM test WHERE id >= 4');
+        $entries = self::$pdo->query('SELECT * FROM test WHERE id >= 4');
         $entry = $entries->fetch();
         self::assertSame('4', $entry['id']);
         self::assertSame('Florent4', $entry['name']);
@@ -143,9 +132,9 @@ final class QueryBuilderTest extends TestCase
             'Florent7',
             'Florent8',
         ];
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $id = $query
-            ->insert('name')
+            ->insertMany('name')
             ->fromTable('test')
             ->execute($data);
 
@@ -157,7 +146,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_where(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->delete()
             ->fromTable('test')
             ->where('name = stuff')
@@ -168,7 +157,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $query->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->delete()
             ->fromTable('test')
             ->where('name = stuff')
@@ -189,7 +178,7 @@ final class QueryBuilderTest extends TestCase
             'email' => 'the_email',
             'id' => 5,
         ];
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select()
             ->fromTable('test')
             ->where($data);
@@ -200,7 +189,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_or_where(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->delete()
             ->fromTable('test')
             ->orWhereNull('name')
@@ -211,7 +200,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $query->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->delete()
             ->fromTable('test')
             ->whereNull('name')
@@ -227,7 +216,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_join(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select()
             ->fromTable('test')
             ->join('otherTable')
@@ -238,7 +227,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $query->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select()
             ->fromTable('test')
             ->join('otherTable')
@@ -253,7 +242,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $query->toSql());
 
         // with multiple join  clauses
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select()
             ->fromTable('test')
             ->join('otherTable')
@@ -273,7 +262,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $query->toSql());
 
         // no on clause
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select()
             ->fromTable('test')
             ->join('otherTable');
@@ -284,7 +273,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_all_other(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $query->select('field as field2')
             ->select('field')
             ->select('otherField')
@@ -310,7 +299,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_update(): void
     {
-        $query = new QueryBuilder($this->pdo);
+        $query = new QueryBuilder(self::$pdo);
         $data = [
             'field1' => 1,
             'field2' => 2,
@@ -320,7 +309,7 @@ final class QueryBuilderTest extends TestCase
             ->where('field3', '=', 0)
             ->toSql();
 
-        $expected = "UPDATE test SET field1 = :field1, field2 = :field2 WHERE field3 = 0";
+        $expected = 'UPDATE test SET field1 = :field1, field2 = :field2 WHERE field3 = 0';
         self::assertSame($expected, $actual);
     }
 }

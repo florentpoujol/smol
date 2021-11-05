@@ -6,7 +6,6 @@ namespace FlorentPoujol\SmolFramework\Database;
 
 use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
-use PDOException;
 use PDOStatement;
 use Stringable;
 
@@ -33,33 +32,41 @@ final class QueryBuilder implements Stringable
     private array $fields = [];
 
     /**
-     * @param array<string>|string $fields
+     * @param iterable<mixed> $rows
      */
-    public function insert(array|string $fields = null, string $actionType = self::ACTION_INSERT): self
+    public function insertMany(iterable $rows, string $actionType = self::ACTION_INSERT): bool
     {
         $this->action = $actionType;
 
-        if (is_string($fields)) {
-            $this->fields[] = $fields;
-        } elseif (is_array($fields)) {
-            // either an array of string (the fields)
-            // either the input params (assoc array or array of arrays)
-            if (isset($fields[0]) && is_string($fields[0])) {
-                $this->fields = $fields;
-            } else {
-                $this->setInputParams($fields);
-            }
+        if (is_array($rows)) {
+            $rowsArray = $rows;
+        } else {
+            $rowsArray = iterator_to_array($rows);
         }
 
-        return $this;
+        $this->setInputParams($rowsArray);
+
+        return $this->pdo
+            ->prepare($this->toSql())
+            ->execute($rowsArray);
+    }
+
+    public function insertSingle(mixed $row): bool
+    {
+        return $this->insertMany([$row]);
     }
 
     /**
-     * @param array<string>|string $fields
+     * @param iterable<mixed> $rows
      */
-    public function insertOrReplace(array|string $fields = null): self
+    public function insertOrReplaceMany(iterable $rows): bool
     {
-        return $this->insert($fields, self::ACTION_INSERT_REPLACE);
+        return $this->insertMany($rows, self::ACTION_INSERT_REPLACE);
+    }
+
+    public function insertOrReplaceSingle(mixed $row): bool
+    {
+        return $this->insertMany([$row], self::ACTION_INSERT_REPLACE);
     }
 
     private function buildInsertQueryString(): string
@@ -82,7 +89,7 @@ final class QueryBuilder implements Stringable
 
         // build multiple row if needed
         $rows = $row; // for when inputParams contain only a single row
-        $rowCount = count($this->inputParams) / $fieldsCount;
+        $rowCount = (int) (count($this->boundParams) / $fieldsCount);
         if ($rowCount >= 2) { // multiple rows are inserted
             $rows = str_repeat($row, $rowCount);
         }
@@ -92,17 +99,22 @@ final class QueryBuilder implements Stringable
     }
 
     /**
-     * @param array<string>|string $fields
+     * @param iterable<mixed> $rows
      */
-    public function update(array|string $fields = null): self
+    public function updateMany(iterable $rows): bool
     {
-        return $this->insert($fields, self::ACTION_UPDATE);
+        return $this->insertMany($rows, self::ACTION_UPDATE);
+    }
+
+    public function updateSingle(mixed $row): bool
+    {
+        return $this->insertMany([$row], self::ACTION_UPDATE);
     }
 
     private function buildUpdateQueryString(): string
     {
-        $fields = empty($this->fields) ? $this->fieldsFromInput : $this->fields;
-        if (empty($fields)) {
+        $fields = $this->fields === [] ? $this->fieldsFromInput : $this->fields;
+        if ($fields === []) {
             throw new SmolFrameworkException('No field is set for UPDATE action');
         }
 
@@ -121,27 +133,43 @@ final class QueryBuilder implements Stringable
         return rtrim($query);
     }
 
-    public function delete(): self
+    public function delete(): bool
     {
         $this->action = self::ACTION_DELETE;
 
-        return $this;
+        return $this->pdo
+            ->prepare($this->toSql())
+            ->execute($this->boundParams);
     }
 
     /**
      * @param array<string>|string $fields
      */
-    public function select(array|string $fields = null): self
+    public function selectMany(array|string $fields = []): mixed
     {
         $this->action = self::ACTION_SELECT;
+        $this->fields = (array) $fields;
 
-        if (is_string($fields)) {
-            $this->fields[] = $fields;
-        } elseif (is_array($fields)) {
-            $this->fields = $fields;
-        }
+        $statement = $this->pdo->prepare($this->toSql());
+        $statement->execute($this->boundParams);
 
-        return $this;
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * @param array<string>|string $fields
+     */
+    public function selectSingle(array|string $fields = []): mixed
+    {
+        $this->limit(1);
+
+        $this->action = self::ACTION_SELECT;
+        $this->fields = (array) $fields;
+
+        $statement = $this->pdo->prepare($this->toSql());
+        $statement->execute($this->boundParams);
+
+        return $statement->fetch(PDO::FETCH_ASSOC);
     }
 
     private function buildSelectQueryString(): string
@@ -167,13 +195,28 @@ final class QueryBuilder implements Stringable
     }
 
     // --------------------------------------------------
+
+    public function count(): int
+    {
+        // calling selectMany() here since selectSingle() add a LIMIT clase
+        return $this->selectMany('COUNT(*) as _count')[0]['_count'] ?? 0;
+    }
+
+    // --------------------------------------------------
     // table
 
     private string $table = '';
 
     public function fromTable(string $tableName): self
     {
-        $this->table = $tableName; // no trailing space here !
+        $this->table = $tableName;
+
+        return $this;
+    }
+
+    public function inTable(string $tableName): self
+    {
+        $this->table = $tableName;
 
         return $this;
     }
@@ -186,7 +229,7 @@ final class QueryBuilder implements Stringable
 
     private int $lastJoinId = -1;
 
-    /** @var array<int, string> "on" clauses by join id */
+    /** @var array<int, array<array<string, mixed>>> "on" clauses by join id */
     private array $onClauses = [];
     // unlike where and having
     // on is an array or conditional arrays
@@ -197,7 +240,7 @@ final class QueryBuilder implements Stringable
         foreach ($this->join as $id => $joinTable) {
             $str .= $joinTable . 'ON ';
 
-            if (! isset($this->onClauses[$id]) || $this->onClauses[$id] === '') {
+            if (! isset($this->onClauses[$id]) || $this->onClauses[$id] === []) {
                 throw new SmolFrameworkException("Join statement without any ON clause: $joinTable");
             }
 
@@ -251,12 +294,12 @@ final class QueryBuilder implements Stringable
     // --------------------------------------------------
     // where
 
-    /** @var array<string> */
-    private array $where = [];
+    /** @var array<array{condition: string, expression: string}>|array<array{condition: string, clauses: array<string, string|array>}> */
+    private array $whereClauses = [];
 
     private function buildWhereQueryString(): string
     {
-        $where = $this->buildConditionalQueryString($this->where);
+        $where = $this->buildConditionalQueryString($this->whereClauses);
         if ($where !== '') {
             $where = "WHERE $where ";
         }
@@ -264,12 +307,20 @@ final class QueryBuilder implements Stringable
         return $where;
     }
 
-    public function where(array|callable|string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
+    public function whereRaw(string $raw): self
     {
-        return $this->addConditionalClause($this->where, $field, $sign, $value, $cond);
+        return $this->addConditionalClause($this->whereClauses, $raw);
     }
 
-    public function orWhere(callable|string $field, string $sign = null, mixed $value = null)
+    /**
+     * @param array<string, bool|int|string>|callable|string $field
+     */
+    public function where(array|callable|string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
+    {
+        return $this->addConditionalClause($this->whereClauses, $field, $sign, $value, $cond);
+    }
+
+    public function orWhere(callable|string $field, string $sign = null, mixed $value = null): self
     {
         return $this->where($field, $sign, $value, 'OR');
     }
@@ -362,7 +413,7 @@ final class QueryBuilder implements Stringable
 
     private function buildOrderByQueryString(): string
     {
-        if (empty($this->orderBy)) {
+        if ($this->orderBy === []) {
             return '';
         }
 
@@ -377,7 +428,7 @@ final class QueryBuilder implements Stringable
         return $this;
     }
 
-    public function biggestFirst(string $field): self
+    public function smallestFirst(string $field): self
     {
         return $this->orderBy($field, 'ASC');
     }
@@ -387,7 +438,7 @@ final class QueryBuilder implements Stringable
         return $this->orderBy($field, 'ASC');
     }
 
-    public function smallestFirst(string $field): self
+    public function biggestFirst(string $field): self
     {
         return $this->orderBy($field, 'DESC');
     }
@@ -402,7 +453,7 @@ final class QueryBuilder implements Stringable
 
     private function buildGroupByQueryString(): string
     {
-        if (empty($this->groupBy)) {
+        if ($this->groupBy === []) {
             return '';
         }
 
@@ -451,12 +502,9 @@ final class QueryBuilder implements Stringable
 
     private string $limit = '';
 
-    public function limit(int $limit, int $offset = null): self
+    public function limit(int $limit): self
     {
         $this->limit = "LIMIT $limit ";
-        if ($offset !== null) {
-            $this->offset($offset);
-        }
 
         return $this;
     }
@@ -472,11 +520,6 @@ final class QueryBuilder implements Stringable
 
     // --------------------------------------------------
     // non-query building methods
-
-    public function prepare(): PDOStatement
-    {
-        return $this->pdo->prepare($this->__toString());
-    }
 
     /**
      * @param null|array<string, string>|array<string> $inputParams
@@ -496,8 +539,8 @@ final class QueryBuilder implements Stringable
             $this->setInputParams($inputParams);
         }
 
-        $statement = $this->pdo->prepare($this->__toString());
-        $success = $statement->execute($this->inputParams);
+        $statement = $this->pdo->prepare($this->toSql());
+        $success = $statement->execute($this->boundParams);
 
         if (
             ! $success ||
@@ -515,17 +558,6 @@ final class QueryBuilder implements Stringable
         return $statement; // ACTION_SELECT
     }
 
-    public function isValid(): bool
-    {
-        try {
-            $this->pdo->prepare($this->__toString());
-        } catch (PDOException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
     public function __toString(): string
     {
         if ($this->action === self::ACTION_INSERT || $this->action === self::ACTION_INSERT_REPLACE) {
@@ -541,12 +573,10 @@ final class QueryBuilder implements Stringable
         }
 
         if ($this->action === self::ACTION_DELETE) {
-            $query = "DELETE FROM $this->table " . $this->buildWhereQueryString();
-
-            return rtrim($query);
+            return rtrim("DELETE FROM $this->table " . $this->buildWhereQueryString());
         }
 
-        return 'QueryBuilder::toString() error: no action has been set';
+        throw new SmolFrameworkException('QueryBuilder::toString() error: no action has been set');
     }
 
     public function toSql(): string
@@ -555,70 +585,67 @@ final class QueryBuilder implements Stringable
     }
 
     /**
-     * @param array<array<string, mixed>> $clauses
+     * @param array<array{condition: string, expression: string}>|array<array{condition: string, clauses: array<string, string|array>}> $clauses
      */
     private function buildConditionalQueryString(array $clauses): string
     {
         // each clause entry is an array
         /*
         [
-            "cond" => "AND" // "OR"
-            "expr" => "expression"
+            'condition' => 'AND' // 'OR'
+            'expression' => 'expression'
         ]
         // or
         [
-            "cond" => "AND" // "OR"
-            "expr" => [
+            'condition' => 'AND' // 'OR'
+            'clauses' => [
                 [
-                    "cond" => "AND"
-                    expr => "expression"
+                    'condition' => 'AND'
+                    'expression' => 'expression'
                 ],
                 ...
             ]
         ]
         */
 
-        if (empty($clauses)) {
+        if ($clauses === []) {
             return '';
         }
 
         $str = '';
+        /**
+         * @var array{condition: string, expression: string}|array{condition: string, clauses: array<string, string|array>} $clause
+         */
         foreach ($clauses as $id => $clause) {
             if ($id > 0) {
-                $str .= $clause['cond'] . ' ';
+                $str .= $clause['condition'] . ' ';
             }
 
-            $expr = $clause['expr'];
-            if (is_array($expr)) {
-                $expr = '(' . $this->buildConditionalQueryString($expr) . ')';
+            if (isset($clause['expression'])) {
+                $str .= $clause['expression'] . ' ';
+
+                continue;
             }
-            $str .= "$expr ";
+
+            $str .= '(' . $this->buildConditionalQueryString($clause['clauses']) . ') '; // @phpstan-ignore-line
         }
 
         return rtrim($str);
     }
 
     /**
-     * @param array<array<string, mixed>> $clauses
-     * @param array<string, mixed>|callable|string $field
+     * @param array<ConditionalClause|ConditionalGroup> $clauses
+     * @param array<string, mixed>|callable|string      $field
+     *
+     * @raturn array<>|array
      */
     private function addConditionalClause(
-        array &$clauses, // /!\ REFERENCE /!\
+        array $clauses,
         array|callable|string $field,
         string $sign = null,
         string|int|bool $value = null,
         string $condition = 'AND'
-    ): self {
-        // /!\ $clauses argument is a REFERENCE
-
-        $clause = [
-            'cond' => $condition,
-
-            // either one expression as a string
-            // or an array of clauses
-            'expr' => '',
-        ];
-
+    ): ConditionalClause|ConditionalGroup {
         if (is_callable($field)) {
             $beforeCount = count($clauses);
             $field($this);
@@ -626,15 +653,17 @@ final class QueryBuilder implements Stringable
             if ($afterCount === $beforeCount) {
                 return $this;
             }
-            $clause['expr'] = array_splice($clauses, $beforeCount);
 
-            $clauses[] = $clause;
+            $clause = new ConditionalGroup();
+            $clause->condition = $condition;
+            $clause->clauses = array_splice($clauses, $beforeCount);
 
             return $this;
         }
 
         if (is_array($field)) {
-            foreach ($field as $fieldName => $value) {
+            // an assoc array, like if the where() was called several times
+            foreach ($field as $fieldName => $_value) {
                 $this->addConditionalClause($clauses, "$fieldName = :$fieldName", condition: $condition);
             }
 
@@ -643,24 +672,26 @@ final class QueryBuilder implements Stringable
             return $this;
         }
 
+        $clause = new ConditionalClause();
+        $clause->condition = $condition;
+
         if ($sign === null && $value === null) {
-            $clause['expr'] = $field;
+            $clause->expression = $field;
         } elseif ($sign !== null && $value === null) {
-            $clause['expr'] = "$field = " . $this->escapeValue($sign);
+            $clause->expression = "$field = " . $this->escapeValue($sign);
         } elseif ($sign !== null && $value !== null) {
-            $clause['expr'] = "$field $sign " . $this->escapeValue($value);
+            $clause->expression = "$field $sign " . $this->escapeValue($value);
         }
 
-        $clauses[] = $clause;
+        // $clauses[] = $clause;
 
-        return $this;
+        return $clause;
     }
 
     private function escapeValue(bool|int|string $value): int|string
     {
         if (
-            $this->pdo === null
-            || $value === '?'
+            $value === '?'
             || (is_string($value) && $value[0] === ':') // suppose named placeholder
         ) {
             return $value;
@@ -671,27 +702,31 @@ final class QueryBuilder implements Stringable
         }
 
         $quoted = $this->pdo->quote($value, PDO::PARAM_STR);
-        if ($quoted === false) {
-            return $value;
+        if ($quoted === false) { // @phpstan-ignore-line (PHPStan thinks $quoted can't be null)
+            throw new SmolFrameworkException("PDO can't quote value '$value' for current DB driver");
         }
 
         return $quoted;
     }
 
-    private array $inputParams = [];
+    /** @var array<string, string>|array<string> */
+    private array $boundParams = [];
+
+    /** @var array<string> */
     private array $fieldsFromInput = [];
+
     private bool $inputIsAssoc = true; // set to true by default so that it generates named placeholder from fields name when the user has not supplied an inputParams
 
     /**
-     * @param null|array<string, string>|array<string> $inputParams
+     * @param array<string, string>|array<string> $inputParams
      *
      * @see self::execute();
      */
     private function setInputParams(array $inputParams): void
     {
-        if (empty($inputParams)) {
+        if ($inputParams === []) {
             $this->inputIsAssoc = true;
-            $this->inputParams = [];
+            $this->boundParams = [];
             $this->fieldsFromInput = [];
 
             return;
@@ -718,11 +753,13 @@ final class QueryBuilder implements Stringable
             // flatten input
             $formattedInput = [];
             foreach ($inputParams as $params) {
-                $formattedInput = array_merge($formattedInput, array_values($params));
+                $formattedInput[] = array_values($params);
             }
+
+            $formattedInput = array_merge($formattedInput);
         }
 
-        $this->inputParams = $formattedInput;
+        $this->boundParams = $formattedInput;
     }
 
     private PDO $pdo;
