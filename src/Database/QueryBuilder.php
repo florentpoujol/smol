@@ -8,8 +8,9 @@ use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
 use PDOException;
 use PDOStatement;
+use Stringable;
 
-final class QueryBuilder
+final class QueryBuilder implements Stringable
 {
     public function __construct(PDO $pdo = null)
     {
@@ -147,7 +148,7 @@ final class QueryBuilder
     {
         $fields = $this->fields;
         if ($fields === []) {
-            $fields = "*";
+            $fields = '*';
         } else {
             $fields = implode(', ', $fields);
         }
@@ -235,14 +236,14 @@ final class QueryBuilder
         return $this->join($tableName, $alias, 'FULL');
     }
 
-    public function on(callable|string $field, string $sign = null, string $value = null, string $cond = 'AND'): self
+    public function on(callable|string $field, string $sign = null, int|string $value = null, string $cond = 'AND'): self
     {
         $this->onClauses[$this->lastJoinId] ??= [];
 
         return $this->addConditionalClause($this->onClauses[$this->lastJoinId], $field, $sign, $value, $cond);
     }
 
-    public function orOn(callable|string $field, string $sign = null, string $value = null): self
+    public function orOn(callable|string $field, string $sign = null, int|string $value = null): self
     {
         return $this->on($field, $sign, $value, 'OR');
     }
@@ -263,7 +264,7 @@ final class QueryBuilder
         return $where;
     }
 
-    public function where(callable|string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
+    public function where(array|callable|string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
     {
         return $this->addConditionalClause($this->where, $field, $sign, $value, $cond);
     }
@@ -548,6 +549,11 @@ final class QueryBuilder
         return 'QueryBuilder::toString() error: no action has been set';
     }
 
+    public function toSql(): string
+    {
+        return $this->__toString();
+    }
+
     /**
      * @param array<array<string, mixed>> $clauses
      */
@@ -594,13 +600,19 @@ final class QueryBuilder
 
     /**
      * @param array<array<string, mixed>> $clauses
+     * @param array<string, mixed>|callable|string $field
      */
-    private function addConditionalClause(array &$clauses, callable|string $field, string $sign = null, string $value = null, $cond = 'AND'): self
-    {
+    private function addConditionalClause(
+        array &$clauses, // /!\ REFERENCE /!\
+        array|callable|string $field,
+        string $sign = null,
+        string|int|bool $value = null,
+        string $condition = 'AND'
+    ): self {
         // /!\ $clauses argument is a REFERENCE
 
         $clause = [
-            'cond' => $cond,
+            'cond' => $condition,
 
             // either one expression as a string
             // or an array of clauses
@@ -615,14 +627,23 @@ final class QueryBuilder
                 return $this;
             }
             $clause['expr'] = array_splice($clauses, $beforeCount);
-        } elseif (is_array($field)) {
+
+            $clauses[] = $clause;
+
+            return $this;
+        }
+
+        if (is_array($field)) {
             foreach ($field as $fieldName => $value) {
-                $this->addConditionalClause($clauses, "$fieldName = :$fieldName", null, null, $cond);
+                $this->addConditionalClause($clauses, "$fieldName = :$fieldName", condition: $condition);
             }
+
             $this->setInputParams($field);
 
             return $this;
-        } elseif ($sign === null && $value === null) {
+        }
+
+        if ($sign === null && $value === null) {
             $clause['expr'] = $field;
         } elseif ($sign !== null && $value === null) {
             $clause['expr'] = "$field = " . $this->escapeValue($sign);
@@ -635,17 +656,21 @@ final class QueryBuilder
         return $this;
     }
 
-    private function escapeValue(mixed $value): string
+    private function escapeValue(bool|int|string $value): int|string
     {
         if (
-            $this->pdo === null ||
-            $value === '?' ||
-            (is_string($value) && $value[0] === ':') // suppose named placeholder
+            $this->pdo === null
+            || $value === '?'
+            || (is_string($value) && $value[0] === ':') // suppose named placeholder
         ) {
             return $value;
         }
 
-        $quoted = $this->pdo->quote($value);
+        if (is_bool($value) || is_int($value)) {
+            return (int) $value;
+        }
+
+        $quoted = $this->pdo->quote($value, PDO::PARAM_STR);
         if ($quoted === false) {
             return $value;
         }
