@@ -7,13 +7,54 @@ namespace FlorentPoujol\SmolFramework\Database;
 use Exception;
 use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
-use Stringable;
 
-final class QueryBuilder implements Stringable
+final class QueryBuilder
 {
     public function __construct(
         private PDO $pdo
     ) {
+    }
+
+    public function getPdo(): PDO
+    {
+        return $this->pdo;
+    }
+
+    public function new(): self
+    {
+        return (new self($this->pdo))->inTable($this->table);
+        // for some reason with SQLite memory, this iseems to reset the connexion, and thus the DB ?
+    }
+
+    public function reset(): self
+    {
+        $this->action = '';
+
+        $this->fields = [];
+        $this->insertedRowCount = 0;
+
+        $this->join = [];
+        $this->lastJoinId = -1;
+        $this->onClauses = [];
+        $this->joinBindings = [];
+
+        $this->whereClauses = [];
+        $this->whereBindings = [];
+
+        $this->orderBy = [];
+        $this->groupBy = [];
+        $this->limit = '';
+        $this->offset = '';
+
+        $this->havingClauses = [];
+        $this->havingBindings = [];
+
+        return $this;
+    }
+
+    public function getBindings(): array
+    {
+        return array_merge($this->joinBindings, $this->whereBindings, $this->havingBindings);
     }
 
     public const ACTION_INSERT = 'INSERT';
@@ -29,22 +70,29 @@ final class QueryBuilder implements Stringable
 
     /**
      * @param array<string>|string $fields
+     *
+     * @return array<array<string, bool|int|string>>
      */
-    public function selectMany(array|string $fields = []): mixed
+    public function selectMany(array|string $fields = []): array
     {
         $this->action = self::ACTION_SELECT;
         $this->fields = (array) $fields;
 
         $statement = $this->pdo->prepare($this->toSql());
-        $statement->execute(
-            array_merge(
-                $this->joinBinds,
-                $this->whereBinds,
-                $this->havingBinds
-            )
-        );
+        $statement->execute(array_merge(
+            $this->joinBindings,
+            $this->whereBindings,
+            $this->havingBindings
+        ));
 
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($result === false) {
+            $strFields = "'" . implode("', '", (array) $fields) . "'";
+            throw new SmolFrameworkException("Select request for fields $strFields could not be performed.");
+        }
+
+        return $result;
     }
 
     /**
@@ -104,10 +152,6 @@ final class QueryBuilder implements Stringable
     {
         $this->action = $actionType;
 
-        if (! is_array($rows)) {
-            $rows = iterator_to_array($rows);
-        }
-
         $this->fields = array_keys((array) $rows[0]);
         $this->insertedRowCount = count($rows);
 
@@ -160,8 +204,11 @@ final class QueryBuilder implements Stringable
     }
 
     // --------------------------------------------------
-    // many
+    // update
 
+    /**
+     * @param array<string, bool|int|string> $newData
+     */
     public function update(array $newData): bool
     {
         $this->action = self::ACTION_UPDATE;
@@ -170,7 +217,7 @@ final class QueryBuilder implements Stringable
 
         return $this->pdo
             ->prepare($this->toSql())
-            ->execute(array_merge(array_values($newData), $this->whereBinds));
+            ->execute(array_merge(array_values($newData), $this->whereBindings));
     }
 
     private function buildUpdateQueryString(): string
@@ -199,7 +246,7 @@ final class QueryBuilder implements Stringable
 
         return $this->pdo
             ->prepare($this->toSql())
-            ->execute($this->whereBinds);
+            ->execute($this->whereBindings);
     }
 
     // --------------------------------------------------
@@ -233,6 +280,9 @@ final class QueryBuilder implements Stringable
     private array $onClauses = [];
     // unlike where and having
     // on is an array or conditional arrays
+
+    /** @var array<bool|int|string> All the values of the or clauses */
+    private array $joinBindings = [];
 
     private function buildJoinQueryString(): string
     {
@@ -298,7 +348,7 @@ final class QueryBuilder implements Stringable
     private array $whereClauses = [];
 
     /** @var array<bool|int|string> All the values of the where clauses that match the placeholders */
-    private array $whereBinds = [];
+    private array $whereBindings = [];
 
     private function buildWhereQueryString(): string
     {
@@ -345,19 +395,20 @@ final class QueryBuilder implements Stringable
 
     public function where(string $field, string $operator, bool|int|string $value, bool $or = false): self
     {
-        $this->whereBinds[] = $value;
+        $this->whereBindings[] = $value;
 
         $operator = strtoupper($operator);
         $this->sanitizeComparisonOperator($operator);
 
-        $sql = $this->quote($field) . " $operator ?";
+        // $sql = $this->quote($field) . " $operator ?"; // SQLite doesn't like when the field in the where clause are quoted
+        $sql = "$field $operator ?";
 
         $this->whereRaw($sql, $or);
 
         return $this;
     }
 
-    public function orWhere(callable|string $field, string $sign, bool|int|string $value): self
+    public function orWhere(string $field, string $sign, bool|int|string $value): self
     {
         return $this->where($field, $sign, $value, true);
     }
@@ -384,8 +435,8 @@ final class QueryBuilder implements Stringable
 
     public function whereBetween(string $field, int|string $min, int|string $max, bool $or = false, bool $not = false): self
     {
-        $this->whereBinds[] = $min;
-        $this->whereBinds[] = $max;
+        $this->whereBindings[] = $min;
+        $this->whereBindings[] = $max;
 
         // "'field' BETWEEN ? AND ?"
         $sql = $this->quote($field) . ($not ? ' NOT' : '') . ' BETWEEN ? AND ?';
@@ -413,7 +464,7 @@ final class QueryBuilder implements Stringable
      */
     public function whereIn(string $field, array $values, bool $or = false, bool $not = false): self
     {
-        $this->whereBinds = array_merge($this->whereBinds, $values);
+        $this->bindings = array_merge($this->bindings, $values);
 
         $placeholders = substr(str_repeat('?, ', count($values)), 0, -2);
 
@@ -520,11 +571,14 @@ final class QueryBuilder implements Stringable
     // having
 
     /** @var array<string> */
-    private array $having = [];
+    private array $havingClauses = [];
+
+    /** @var array<bool|int|string> All the values of the having clauses that match the placeholders */
+    private array $havingBindings = [];
 
     private function buildHavingQueryString(): string
     {
-        $having = $this->buildConditionalQueryString($this->having);
+        $having = $this->buildConditionalQueryString($this->havingClauses);
         if ($having === '') {
             return '';
         }
@@ -534,7 +588,7 @@ final class QueryBuilder implements Stringable
 
     public function having(string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
     {
-        return $this->addConditionalClause($this->having, $field, $sign, $value, $cond);
+        return $this->addConditionalClause($this->havingClauses, $field, $sign, $value, $cond);
     }
 
     public function orHaving(string $field, string $sign = null, mixed $value = null): self
@@ -565,24 +619,6 @@ final class QueryBuilder implements Stringable
 
     // --------------------------------------------------
     // non-query building methods
-
-    /**
-     * @param null|array<string, string>|array<string> $inputParams
-     *                                                              - an associative array of named parameters
-     *                                                              - or an in-order array of parameters, when placeholders are ?
-     *                                                              - an array of these two kinds of array, which is useful to insert or update several rows with the same query
-     *
-     * @return bool|\PDOStatement|string
-     *                                   - `false` when the query is unsuccessful
-     *                                   - `true` when the query is successful and the action is `INSERT OR REPLACE`, `UPDATE` or `DELETE`.
-     *                                   - the last inserted id when the action is `INSERT`.
-     *                                   - the PDOStatement object when the action is `SELECT`.
-     */
-
-    public function __toString(): string
-    {
-        return $this->toSql();
-    }
 
     public function toSql(): string
     {
@@ -705,57 +741,4 @@ final class QueryBuilder implements Stringable
 
         return $quoted;
     }
-
-    /** @var array<string, string>|array<string> */
-    private array $boundParams = [];
-
-    /** @var array<string> */
-    private array $fieldsFromInput = [];
-
-    private bool $inputIsAssoc = true; // set to true by default so that it generates named placeholder from fields name when the user has not supplied an inputParams
-
-    // /**
-    //  * @param array<string, string>|array<string> $inputParams
-    //  *
-    //  * @see self::execute();
-    //  */
-    // private function setInputParams(array $inputParams): void
-    // {
-    //     if ($inputParams === []) {
-    //         $this->inputIsAssoc = true;
-    //         $this->boundParams = [];
-    //         $this->fieldsFromInput = [];
-    //
-    //         return;
-    //     }
-    //
-    //     // get format of input
-    //     // and flatten it when needed
-    //     $formattedInput = $inputParams;
-    //
-    //     $keys = array_keys($inputParams);
-    //     $this->inputIsAssoc = is_string($keys[0]);
-    //
-    //     if ($this->inputIsAssoc) {
-    //         // save fields from input when data is assoc array, if we need them later
-    //         $this->fieldsFromInput = $keys;
-    //     } elseif (is_array($inputParams[0])) {
-    //         $keys = array_keys($inputParams[0]);
-    //         if (is_string($keys[0])) {
-    //             $this->fieldsFromInput = $keys;
-    //             // input is assoc but will be flatten in a regular array just after
-    //             // so don't set inputIsAssoc = true here
-    //         }
-    //
-    //         // flatten input
-    //         $formattedInput = [];
-    //         foreach ($inputParams as $params) {
-    //             $formattedInput[] = array_values($params);
-    //         }
-    //
-    //         $formattedInput = array_merge($formattedInput);
-    //     }
-    //
-    //     $this->boundParams = $formattedInput;
-    // }
 }

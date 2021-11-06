@@ -36,6 +36,17 @@ if (! function_exists('__')) {
     }
 }
 
+if (! function_exists('dump')) {
+    function dump(mixed ...$values): void
+    {
+        if (function_exists('xdebug_var_dump')) {
+            xdebug_var_dump(...$values);
+        } else {
+            var_dump(...$values);
+        }
+    }
+}
+
 if (! function_exists('dd')) {
     /**
      * @return never-return

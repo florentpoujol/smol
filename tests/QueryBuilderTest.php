@@ -6,6 +6,7 @@ namespace Tests\FlorentPoujol\SmolFramework;
 
 use FlorentPoujol\SmolFramework\Database\QueryBuilder;
 use PDO;
+use PDOStatement;
 use PHPUnit\Framework\TestCase;
 
 final class QueryBuilderTest extends TestCase
@@ -15,7 +16,9 @@ final class QueryBuilderTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         self::$pdo = new PDO('sqlite::memory:', null, null, [
-            PDO::ERRMODE_EXCEPTION => true,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
 
         $createTable = <<<'SQL'
@@ -30,145 +33,140 @@ final class QueryBuilderTest extends TestCase
         self::$pdo->exec($createTable);
     }
 
-    public function test_insert(): void
+    public function test_insert_single(): void
     {
-        $query = new QueryBuilder(self::$pdo);
-        $query
-            ->insertMany(['name', 'email', 'created_at'])
-            ->fromTable('test');
+        $qb = new QueryBuilder(self::$pdo);
+        $success = $qb
+            ->inTable('test')
+            ->insertSingle([
+                'name' => 'Florent',
+                'email' => 'flo@flo.fr',
+                'created_at' => '2021-11-06 21:27:00',
+            ]);
 
-        $expected = 'INSERT INTO test (name, email, created_at) VALUES (:name, :email, :created_at)';
-        self::assertSame($expected, $query->toSql());
+        self::assertTrue($success);
 
-        $data = [
-            'name' => 'Florent',
-            'email' => 'flo@flo.fr',
-            'created_at' => 'NOW()',
-        ];
-        $id = $query->execute($data);
-        self::assertSame('1', $id);
+        $expected = "INSERT INTO 'test' ('name', 'email', 'created_at') VALUES (?, ?, ?)";
+        self::assertSame($expected, $qb->toSql());
+        self::assertSame('1', $qb->getPdo()->lastInsertId());
 
-        $entry = self::$pdo->query('SELECT * FROM test')->fetch();
+        $statement = self::$pdo->query('SELECT * FROM test');
+        self::assertInstanceOf(PDOStatement::class, $statement);
+        assert($statement instanceof PDOStatement); // for PHPStan
+
+        $entry = $statement->fetch();
         self::assertSame('1', $entry['id']);
         self::assertSame('Florent', $entry['name']);
-
-        // data passed to insert()
-        $query = new QueryBuilder(self::$pdo);
-        $data = [
-            'name' => 'Florent2',
-            'created_at' => 'NOW()',
-        ];
-        $query->insertMany($data)->fromTable('test');
-
-        $expected = 'INSERT INTO test (name, created_at) VALUES (:name, :created_at)';
-        self::assertSame($expected, $query->toSql());
-
-        $id = $query->execute();
-        self::assertSame('2', $id);
-
-        $entry = self::$pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
-        self::assertSame('2', $entry['id']);
-        self::assertSame('Florent2', $entry['name']);
-
-        // data passed to execute()
-        $query = new QueryBuilder(self::$pdo);
-        $query->insertMany(['name', 'email', 'created_at'])->fromTable('test');
-
-        $expected = 'INSERT INTO test (name, email, created_at) VALUES (:name, :email, :created_at)';
-        self::assertSame($expected, $query->toSql());
-
-        $data = [
-            'Florent3',
-            'email@email.com',
-            'NOW()',
-        ];
-        $id = $query->execute($data);
-
-        $expected = 'INSERT INTO test (name, email, created_at) VALUES (?, ?, ?)';
-        self::assertSame($expected, $query->toSql());
-
-        self::assertSame('3', $id);
-
-        $entry = self::$pdo->query("SELECT * FROM test WHERE id = $id")->fetch();
-        self::assertSame('3', $entry['id']);
-        self::assertSame('Florent3', $entry['name']);
+        self::assertSame('flo@flo.fr', $entry['email']);
+        self::assertSame('2021-11-06 21:27:00', $entry['created_at']);
     }
 
-    public function test_multi_insert(): void
+    public function test_insert_many(): void
     {
-        $data = [
-            [
-                'name' => 'Florent4',
-                'email' => 'flo@flo.fr',
-            ],
-            [
-                'name' => 'Florent5',
-                'email' => 'flo@flo.fr',
-            ],
-        ];
-        $query = new QueryBuilder(self::$pdo);
-        $id = $query
-            ->insertMany($data)
-            ->fromTable('test')
-            ->execute();
+        $qb = new QueryBuilder(self::$pdo);
+        $success = $qb
+            ->inTable('test')
+            ->insertMany([
+                [
+                    'name' => 'Florent2',
+                    'email' => 'flo@flo2.fr',
+                ],
+                [
+                    'name' => 'Florent3',
+                    'email' => 'flo@flo3.fr',
+                ],
+            ]);
 
-        $expected = 'INSERT INTO test (name, email) VALUES (?, ?), (?, ?)';
-        self::assertSame($expected, $query->toSql());
+        self::assertTrue($success);
 
-        // $id = $query->execute($data);
-        self::assertSame('5', $id);
+        $expected = "INSERT INTO 'test' ('name', 'email') VALUES (?, ?), (?, ?)";
+        self::assertSame($expected, $qb->toSql());
 
-        $entries = self::$pdo->query('SELECT * FROM test WHERE id >= 4');
-        $entry = $entries->fetch();
-        self::assertSame('4', $entry['id']);
-        self::assertSame('Florent4', $entry['name']);
-        $entry = $entries->fetch();
-        self::assertSame('5', $entry['id']);
-        self::assertSame('Florent5', $entry['name']);
+        $entries = $qb->reset()->selectMany();
 
-        // data pass
-        $data = [
-            'Florent6',
-            'Florent7',
-            'Florent8',
-        ];
-        $query = new QueryBuilder(self::$pdo);
-        $id = $query
-            ->insertMany('name')
-            ->fromTable('test')
-            ->execute($data);
+        self::assertTrue(isset($entries[0]['id']));
+        self::assertSame('Florent2', $entries[0]['name']);
+        self::assertSame('flo@flo2.fr', $entries[0]['email']);
 
-        $expected = 'INSERT INTO test (name) VALUES (?), (?), (?)';
-        self::assertSame($expected, $query->toSql());
-
-        self::assertSame('8', $id);
+        self::assertTrue(isset($entries[0]['id']));
+        self::assertSame($qb->getPdo()->lastInsertId(), $entries[1]['id']);
+        self::assertSame('Florent3', $entries[1]['name']);
+        self::assertSame('flo@flo3.fr', $entries[1]['email']);
     }
 
-    public function test_where(): void
+    public function test_update(): void
     {
-        $query = new QueryBuilder(self::$pdo);
-        $query->delete()
+        $this->test_insert_many();
+
+        $qb = new QueryBuilder(self::$pdo);
+        $success = $qb
+            ->inTable('test')
+            ->where('name', '=', 'Florent2')
+            ->update([
+                'email' => 'new email',
+            ]);
+
+        self::assertTrue($success);
+
+        $expected = "UPDATE 'test' SET 'email' = ? WHERE name = ?";
+        self::assertSame($expected, $qb->toSql());
+
+        $entries = $qb->reset()->selectMany();
+        self::assertCount(2, $entries);
+
+        self::assertSame('Florent2', $entries[0]['name']);
+        self::assertSame('new email', $entries[0]['email']);
+
+        self::assertSame('Florent3', $entries[1]['name']);
+        self::assertSame('flo@flo.fr', $entries[1]['email']);
+    }
+
+    public function test_delete(): void
+    {
+        $this->test_insert_many();
+
+        $qb = new QueryBuilder(self::$pdo);
+        $success = $qb
             ->fromTable('test')
+            ->where('email', '=', 'flo@flo3.fr')
+            ->delete();
+
+        self::assertTrue($success);
+
+        $expected = "DELETE FROM 'test' WHERE email = ? ";
+        self::assertSame($expected, $qb->toSql());
+
+        $entries = $qb->reset()->selectMany();
+        self::assertCount(1, $entries);
+
+        self::assertSame('Florent2', $entries[0]['name']);
+        self::assertSame('flo@flo2.fr', $entries[0]['email']);
+    }
+
+    public function test_select_with_various_wheres(): void
+    {
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->inTable('test')
             ->where('name = stuff')
             ->where('email', ':email')
             ->where('id', '>=', 5);
 
         $expected = 'DELETE FROM test WHERE name = stuff AND email = :email AND id >= 5';
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder(self::$pdo);
-        $query->delete()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->delete()
             ->fromTable('test')
             ->where('name = stuff')
-            ->where(function (QueryBuilder $query): void {
-                $query->where('other = stuff')
+            ->where(function (QueryBuilder $qb): void {
+                $qb->where('other = stuff')
                     ->where('email', ':email');
             })
             ->where('id', '>=', 5);
 
         $expected = 'DELETE FROM test WHERE name = stuff AND (other = stuff AND email = :email) AND id >= 5';
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
     }
 
     public function test_where_single_array_argument(): void
@@ -178,57 +176,57 @@ final class QueryBuilderTest extends TestCase
             'email' => 'the_email',
             'id' => 5,
         ];
-        $query = new QueryBuilder(self::$pdo);
-        $query->select()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select()
             ->fromTable('test')
             ->where($data);
 
         $expected = 'SELECT * FROM test WHERE name = :name AND email = :email AND id = :id';
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
     }
 
     public function test_or_where(): void
     {
-        $query = new QueryBuilder(self::$pdo);
-        $query->delete()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->delete()
             ->fromTable('test')
             ->orWhereNull('name')
             ->orWhere('email', ':email')
             ->where('id', '>=', 5);
 
         $expected = 'DELETE FROM test WHERE name IS NULL OR email = :email AND id >= 5';
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder(self::$pdo);
-        $query->delete()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->delete()
             ->fromTable('test')
             ->whereNull('name')
-            ->orWhere(function (QueryBuilder $query): void {
-                $query->where('other = stuff')
+            ->orWhere(function (QueryBuilder $qb): void {
+                $qb->where('other = stuff')
                     ->orWhereNotNull('email');
             })
             ->where('id', '>=', 5);
 
         $expected = 'DELETE FROM test WHERE name IS NULL OR (other = stuff OR email IS NOT NULL) AND id >= 5';
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
     }
 
     public function test_join(): void
     {
-        $query = new QueryBuilder(self::$pdo);
-        $query->select()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select()
             ->fromTable('test')
             ->join('otherTable')
             ->on('field', 'value')
             ->orOn('field2', '>', 5);
 
         $expected = "SELECT * FROM test INNER JOIN otherTable ON field = 'value' OR field2 > 5";
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
 
         // with nested clauses
-        $query = new QueryBuilder(self::$pdo);
-        $query->select()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select()
             ->fromTable('test')
             ->join('otherTable')
             ->on('field', 'value')
@@ -239,11 +237,11 @@ final class QueryBuilderTest extends TestCase
             ->orOn('field2', '>', 'value2');
 
         $expected = "SELECT * FROM test INNER JOIN otherTable ON field = 'value' AND (field = 'value' AND field3 = 'value3') OR field2 > 'value2'";
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
 
         // with multiple join  clauses
-        $query = new QueryBuilder(self::$pdo);
-        $query->select()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select()
             ->fromTable('test')
             ->join('otherTable')
             ->on('field', 'value')
@@ -259,22 +257,22 @@ final class QueryBuilderTest extends TestCase
         $expected = 'SELECT * FROM test '
             . "INNER JOIN otherTable ON field = 'value' AND (field = 'value' AND field3 = 'value3') OR field2 > 'value2' "
             . "RIGHT JOIN yetAnotherTable ON field = 'value' AND field2 > 'value2'";
-        self::assertSame($expected, $query->toSql());
+        self::assertSame($expected, $qb->toSql());
 
         // no on clause
-        $query = new QueryBuilder(self::$pdo);
-        $query->select()
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select()
             ->fromTable('test')
             ->join('otherTable');
 
         $this->expectException(\Exception::class);
-        $query->toSql();
+        $qb->toSql();
     }
 
     public function test_all_other(): void
     {
-        $query = new QueryBuilder(self::$pdo);
-        $query->select('field as field2')
+        $qb = new QueryBuilder(self::$pdo);
+        $qb->select('field as field2')
             ->select('field')
             ->select('otherField')
             ->fromTable('test')
@@ -294,22 +292,6 @@ final class QueryBuilderTest extends TestCase
             . 'GROUP BY field '
             . "HAVING field = 'value' OR field2 = 'value2' "
             . 'ORDER BY field DESC LIMIT 10 OFFSET 5';
-        self::assertSame($expected, $query->toSql());
-    }
-
-    public function test_update(): void
-    {
-        $query = new QueryBuilder(self::$pdo);
-        $data = [
-            'field1' => 1,
-            'field2' => 2,
-        ];
-        $actual = $query->update($data)
-            ->fromTable('test')
-            ->where('field3', '=', 0)
-            ->toSql();
-
-        $expected = 'UPDATE test SET field1 = :field1, field2 = :field2 WHERE field3 = 0';
-        self::assertSame($expected, $actual);
+        self::assertSame($expected, $qb->toSql());
     }
 }
