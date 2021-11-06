@@ -98,11 +98,17 @@ final class QueryBuilder
     /**
      * @param array<string>|string $fields
      */
-    public function selectSingle(array|string $fields = []): mixed
+    public function selectSingle(array|string $fields = []): ?array
     {
         $this->limit(1);
 
-        return $this->selectMany($fields);
+        $row = $this->selectMany($fields);
+
+        if ($row === []) {
+            return null;
+        }
+
+        return $row[0];
     }
 
     private function buildSelectQueryString(): string
