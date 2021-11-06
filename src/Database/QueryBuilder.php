@@ -6,16 +6,13 @@ namespace FlorentPoujol\SmolFramework\Database;
 
 use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
-use PDOStatement;
 use Stringable;
 
 final class QueryBuilder implements Stringable
 {
-    public function __construct(PDO $pdo = null)
-    {
-        if ($pdo !== null) {
-            $this->pdo = $pdo;
-        }
+    public function __construct(
+        private PDO $pdo
+    ) {
     }
 
     public const ACTION_INSERT = 'INSERT';
@@ -297,6 +294,9 @@ final class QueryBuilder implements Stringable
     /** @var array<array{condition: string, expression: string}>|array<array{condition: string, clauses: array<string, string|array>}> */
     private array $whereClauses = [];
 
+    /** @var array<|bool|int|string> All the values of the where clauses that match the placeholders */
+    private array $whereBinds = [];
+
     private function buildWhereQueryString(): string
     {
         $where = $this->buildConditionalQueryString($this->whereClauses);
@@ -308,6 +308,11 @@ final class QueryBuilder implements Stringable
     }
 
     public function whereRaw(string $raw): self
+    {
+        return $this->addConditionalClause($this->whereClauses, $raw);
+    }
+
+    public function orWhereRaw(string $raw): self
     {
         return $this->addConditionalClause($this->whereClauses, $raw);
     }
@@ -327,52 +332,71 @@ final class QueryBuilder implements Stringable
 
     public function whereNull(string $field): self
     {
-        return $this->where("$field IS NULL");
+        return $this->whereRaw($this->escapeValue($field) . ' IS NULL');
     }
 
     public function orWhereNull(string $field): self
     {
-        return $this->orWhere("$field IS NULL");
+        return $this->orWhereRaw($this->escapeValue($field) . ' IS NULL');
     }
 
     public function whereNotNull(string $field): self
     {
-        return $this->where("$field IS NOT NULL");
+        return $this->whereRaw($this->escapeValue($field) . ' IS NOT NULL');
     }
 
     public function orWhereNotNull(string $field): self
     {
-        return $this->orWhere("$field IS NOT NULL");
+        return $this->orWhere($this->escapeValue($field) . ' IS NOT NULL');
     }
 
-    public function whereBetween(string $field, int|string $min, int|string $max): self
+    public function whereBetween(string $field, int|string $min, int|string $max, bool $or = false, bool $notBetween = false): self
     {
-        return $this->where("$field BETWEEN $min AND $max");
+        $this->whereBinds[] = $min;
+        $this->whereBinds[] = $max;
+
+        // "'field' BETWEEN ? AND ?"
+        $sql = $this->escapeValue($field) . ($notBetween ? ' NOT BETWEEN ' : ' BETWEEN ') . '? AND ?';
+
+        if ($or) {
+            return $this->orWhereRaw($sql);
+        }
+
+        return $this->whereRaw($sql);
     }
 
     public function orWhereBetween(string $field, int|string $min, int|string $max): self
     {
-        return $this->orWhere("$field BETWEEN $min AND $max");
+        return $this->whereBetween($field, $min, $max, true);
     }
 
     public function whereNotBetween(string $field, int|string $min, int|string $max): self
     {
-        return $this->where("$field NOT BETWEEN $min AND $max");
+        return $this->whereBetween($field, $min, $max, false, true);
     }
 
     public function orWhereNotBetween(string $field, int|string $min, int|string $max): self
     {
-        return $this->orWhere("$field NOT BETWEEN $min AND $max");
+        return $this->whereBetween($field, $min, $max, true, true);
     }
 
     /**
      * @param array<mixed> $values
      */
-    public function whereIn(string $field, array $values): self
+    public function whereIn(string $field, array $values, bool $or = false, bool $notIn = false): self
     {
-        $values = implode(', ', $values);
+        $this->whereBinds = array_merge($this->whereBinds, $values);
 
-        return $this->where("$field IN ($values)");
+        $placeholders = substr(str_repeat('?,', count($values)), 0, -1);
+
+        // "'field' IN (?,?)"
+        $sql = $this->escapeValue($field) . " IN ($placeholders)";
+
+        if ($or) {
+            return $this->orWhereRaw($sql);
+        }
+
+        return $this->whereRaw($sql);
     }
 
     /**
@@ -380,9 +404,7 @@ final class QueryBuilder implements Stringable
      */
     public function orWhereIn(string $field, array $values): self
     {
-        $values = implode(', ', $values);
-
-        return $this->orWhere("$field IN ($values)");
+        return $this->whereIn($field, $values, true);
     }
 
     /**
@@ -390,9 +412,7 @@ final class QueryBuilder implements Stringable
      */
     public function whereNotIn(string $field, array $values): self
     {
-        $values = implode(', ', $values);
-
-        return $this->where("$field NOT IN ($values)");
+        return $this->whereIn($field, $values, false, true);
     }
 
     /**
@@ -400,13 +420,11 @@ final class QueryBuilder implements Stringable
      */
     public function orWhereNotIn(string $field, array $values): self
     {
-        $values = implode(', ', $values);
-
-        return $this->orWhere("$field NOT IN ($values)");
+        return $this->whereIn($field, $values, true, true);
     }
 
     // --------------------------------------------------
-    // order by, group by, having
+    // order by
 
     /** @var array<string> */
     private array $orderBy = [];
@@ -420,33 +438,36 @@ final class QueryBuilder implements Stringable
         return 'ORDER BY ' . implode(', ', $this->orderBy) . ' ';
     }
 
-    public function orderBy(string $field, string $direction = 'ASC'): self
+    public function orderBy(string $field, bool $ascending = true): self
     {
-        $direction = strtoupper($direction);
-        $this->orderBy[] = "$field $direction";
+        $direction = $ascending ? 'ASC' : 'DESC';
+        $this->orderBy[] = $this->escapeValue($field) . " $direction";
 
         return $this;
     }
 
     public function smallestFirst(string $field): self
     {
-        return $this->orderBy($field, 'ASC');
+        return $this->orderBy($field);
     }
 
     public function oldestFirst(string $field): self
     {
-        return $this->orderBy($field, 'ASC');
+        return $this->orderBy($field);
     }
 
     public function biggestFirst(string $field): self
     {
-        return $this->orderBy($field, 'DESC');
+        return $this->orderBy($field, true);
     }
 
     public function mostRecentFirst(string $field): self
     {
-        return $this->orderBy($field, 'DESC');
+        return $this->orderBy($field, true);
     }
+
+    // --------------------------------------------------
+    // group by
 
     /** @var array<string> */
     private array $groupBy = [];
@@ -465,14 +486,15 @@ final class QueryBuilder implements Stringable
      */
     public function groupBy(array|string $fields): self
     {
-        if (is_string($fields)) {
-            $this->groupBy[] = $fields;
-        } else {
-            $this->groupBy = $fields;
+        foreach ((array) $fields as $group) {
+            $this->groupBy[] = $this->escapeValue($group);
         }
 
         return $this;
     }
+
+    // --------------------------------------------------
+    // having
 
     /** @var array<string> */
     private array $having = [];
@@ -533,30 +555,6 @@ final class QueryBuilder implements Stringable
      *                                   - the last inserted id when the action is `INSERT`.
      *                                   - the PDOStatement object when the action is `SELECT`.
      */
-    public function execute(array $inputParams = null): bool|PDOStatement|string
-    {
-        if ($inputParams !== null) {
-            $this->setInputParams($inputParams);
-        }
-
-        $statement = $this->pdo->prepare($this->toSql());
-        $success = $statement->execute($this->boundParams);
-
-        if (
-            ! $success ||
-            $this->action === self::ACTION_INSERT_REPLACE ||
-            $this->action === self::ACTION_UPDATE ||
-            $this->action === self::ACTION_DELETE
-        ) {
-            return $success;
-        }
-
-        if ($this->action === self::ACTION_INSERT) {
-            return $this->pdo->lastInsertId();
-        }
-
-        return $statement; // ACTION_SELECT
-    }
 
     public function __toString(): string
     {
@@ -688,20 +686,13 @@ final class QueryBuilder implements Stringable
         return $clause;
     }
 
-    private function escapeValue(bool|int|string $value): int|string
+    public function escapeValue(bool|int|string $value, int $type = PDO::PARAM_STR): int|string
     {
-        if (
-            $value === '?'
-            || (is_string($value) && $value[0] === ':') // suppose named placeholder
-        ) {
-            return $value;
-        }
-
         if (is_bool($value) || is_int($value)) {
             return (int) $value;
         }
 
-        $quoted = $this->pdo->quote($value, PDO::PARAM_STR);
+        $quoted = $this->pdo->quote($value, $type);
         if ($quoted === false) { // @phpstan-ignore-line (PHPStan thinks $quoted can't be null)
             throw new SmolFrameworkException("PDO can't quote value '$value' for current DB driver");
         }
@@ -760,12 +751,5 @@ final class QueryBuilder implements Stringable
         }
 
         $this->boundParams = $formattedInput;
-    }
-
-    private PDO $pdo;
-
-    public function setPdo(PDO $pdo): void
-    {
-        $this->pdo = $pdo;
     }
 }
