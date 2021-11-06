@@ -63,7 +63,7 @@ final class QueryBuilder
     public const ACTION_DELETE = 'DELETE';
     public const ACTION_SELECT = 'SElECT';
 
-    private string $action = '';
+    private string $action = self::ACTION_SELECT;
 
     // --------------------------------------------------
     // select
@@ -114,13 +114,8 @@ final class QueryBuilder
     private function buildSelectQueryString(): string
     {
         $fields = '*';
-
         if ($this->fields !== []) {
-            $fields = '';
-            foreach ($this->fields as $field) {
-                $fields .= $this->quote($field) . ', ';
-            }
-            $fields = substr($fields, 0, -2);
+            $fields = implode(', ', $this->fields);
         }
         // do not force to prefix the fields with the table name because it is not necessarily what is wanted
 
@@ -382,6 +377,35 @@ final class QueryBuilder
         return $this->whereRaw($raw, true);
     }
 
+    public function whereGroup(callable $group, bool $or = false): self
+    {
+        $coutBefore = count($this->whereClauses);
+        $group($this);
+        $coutAfter = count($this->whereClauses);
+
+        if ($coutAfter - $coutBefore <= 0) {
+            return $this;
+        }
+
+        // if the closure as added where clauses ...
+        $clause = new ConditionalGroup();
+        $clause->condition = $or ? 'OR' : 'AND';
+
+        // actually remove them from the $this->whereClauses property
+        // to nest them in the ConditionalGroup clause.
+        // And this all nicely works recursively :)
+        $clause->clauses = array_splice($this->whereClauses, $coutBefore);
+
+        $this->whereClauses[] = $clause;
+
+        return $this;
+    }
+
+    public function orWhereGroup(callable $group): self
+    {
+        return $this->whereGroup($group, true);
+    }
+
     /** @var array<string> */
     private array $comparisonOperators = [
         '=', '!=', '<>', '>', '>=', '<', '<=', 'LIKE', 'NOT LIKE',
@@ -444,8 +468,8 @@ final class QueryBuilder
         $this->whereBindings[] = $min;
         $this->whereBindings[] = $max;
 
-        // "'field' BETWEEN ? AND ?"
-        $sql = $this->quote($field) . ($not ? ' NOT' : '') . ' BETWEEN ? AND ?';
+        // "field BETWEEN ? AND ?"
+        $sql = $field . ($not ? ' NOT' : '') . ' BETWEEN ? AND ?';
 
         return $this->whereRaw($sql, $or);
     }
@@ -470,12 +494,12 @@ final class QueryBuilder
      */
     public function whereIn(string $field, array $values, bool $or = false, bool $not = false): self
     {
-        $this->bindings = array_merge($this->bindings, $values);
+        $this->whereBindings = array_merge($this->whereBindings, $values);
 
         $placeholders = substr(str_repeat('?, ', count($values)), 0, -2);
 
-        // "'field' IN (?,?)"
-        $sql = $this->quote($field) . ($not ? ' NOT' : '') . " IN ($placeholders)";
+        // "field IN (?,?)"
+        $sql = $field . ($not ? ' NOT' : '') . " IN ($placeholders)";
 
         return $this->whereRaw($sql, $or);
     }

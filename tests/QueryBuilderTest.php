@@ -6,6 +6,7 @@ namespace Tests\FlorentPoujol\SmolFramework;
 
 use FlorentPoujol\SmolFramework\Database\QueryBuilder;
 use PDO;
+use PDOException;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 
@@ -35,6 +36,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_insert_single(): void
     {
+        // act
         $qb = new QueryBuilder(self::$pdo);
         $success = $qb
             ->inTable('test')
@@ -44,6 +46,7 @@ final class QueryBuilderTest extends TestCase
                 'created_at' => '2021-11-06 21:27:00',
             ]);
 
+        // assert
         self::assertTrue($success);
 
         $expected = "INSERT INTO 'test' ('name', 'email', 'created_at') VALUES (?, ?, ?)";
@@ -63,6 +66,7 @@ final class QueryBuilderTest extends TestCase
 
     public function test_insert_many(): void
     {
+        // act
         $qb = new QueryBuilder(self::$pdo);
         $success = $qb
             ->inTable('test')
@@ -77,6 +81,7 @@ final class QueryBuilderTest extends TestCase
                 ],
             ]);
 
+        // assert
         self::assertTrue($success);
 
         $expected = "INSERT INTO 'test' ('name', 'email') VALUES (?, ?), (?, ?)";
@@ -96,16 +101,31 @@ final class QueryBuilderTest extends TestCase
 
     public function test_update(): void
     {
-        $this->test_insert_many();
-
+        // arrange
         $qb = new QueryBuilder(self::$pdo);
+        $qb
+            ->inTable('test')
+            ->insertMany([
+                [
+                    'name' => 'Florent2',
+                    'email' => 'flo@flo2.fr',
+                ],
+                [
+                    'name' => 'Florent3',
+                    'email' => 'flo@flo3.fr',
+                ],
+            ]);
+
+        // act
         $success = $qb
+            ->reset()
             ->inTable('test')
             ->where('name', '=', 'Florent2')
             ->update([
                 'email' => 'new email',
             ]);
 
+        // assert
         self::assertTrue($success);
 
         $expected = "UPDATE 'test' SET 'email' = ? WHERE name = ?";
@@ -123,14 +143,17 @@ final class QueryBuilderTest extends TestCase
 
     public function test_delete(): void
     {
+        // arrange
         $this->test_insert_many();
 
+        // act
         $qb = new QueryBuilder(self::$pdo);
         $success = $qb
             ->fromTable('test')
             ->where('email', '=', 'flo@flo3.fr')
             ->delete();
 
+        // assert
         self::assertTrue($success);
 
         $expected = "DELETE FROM 'test' WHERE email = ? ";
@@ -143,29 +166,137 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('flo@flo2.fr', $entries[0]['email']);
     }
 
-    public function test_select_with_various_wheres(): void
+    // --------------------------------------------------
+
+    private function seedForSelect(): QueryBuilder
     {
         $qb = new QueryBuilder(self::$pdo);
-        $qb->inTable('test')
-            ->where('name = stuff')
-            ->where('email', ':email')
-            ->where('id', '>=', 5);
+        $qb->inTable('test')->insertMany([
+            [
+                'name' => 'Florent1',
+                'email' => 'flo@flo1.fr',
+                'created_at' => '2021-09-06 21:27:00',
+            ],
+            [
+                'name' => 'Flo2',
+                'email' => 'flo@flo2.fr',
+                'created_at' => '2021-10-06 21:27:00',
+            ],
+            [
+                'name' => 'rent3',
+                'email' => 'flo@flo3.fr',
+                'created_at' => '2021-11-06 21:27:00',
+            ],
+        ]);
 
-        $expected = 'DELETE FROM test WHERE name = stuff AND email = :email AND id >= 5';
+        return $qb;
+    }
+
+    public function test_simple_where(): void
+    {
+        // arrange
+        $qb = $this->seedForSelect();
+
+        // act & assert, several times
+        // --------------------------------------------------
+        $row = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'stuff')
+            ->selectSingle();
+
+        $expected = "SELECT * FROM 'test' WHERE name = ? LIMIT 1 ";
         self::assertSame($expected, $qb->toSql());
 
-        // with nested clauses
-        $qb = new QueryBuilder(self::$pdo);
-        $qb->delete()
-            ->fromTable('test')
-            ->where('name = stuff')
-            ->where(function (QueryBuilder $qb): void {
-                $qb->where('other = stuff')
-                    ->where('email', ':email');
-            })
-            ->where('id', '>=', 5);
+        self::assertNull($row);
 
-        $expected = 'DELETE FROM test WHERE name = stuff AND (other = stuff AND email = :email) AND id >= 5';
+        // --------------------------------------------------
+        $row = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'rent3')
+            ->selectSingle();
+
+        $expected = "SELECT * FROM 'test' WHERE name = ? LIMIT 1 ";
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertNotNull($row);
+        self::assertSame('rent3', $row['name']);
+        self::assertSame('flo@flo3.fr', $row['email']);
+
+        // --------------------------------------------------
+        $row = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'rent3')
+            ->where('email', 'like', '%flo3.fr')
+            ->selectSingle();
+
+        $expected = "SELECT * FROM 'test' WHERE name = ? AND email LIKE ? LIMIT 1 ";
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertNotNull($row);
+        self::assertSame('rent3', $row['name']);
+        self::assertSame('flo@flo3.fr', $row['email']);
+
+        // --------------------------------------------------
+        $row = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('created_at', '>=', '2021-11-01')
+            ->selectSingle();
+
+        $expected = "SELECT * FROM 'test' WHERE created_at >= ? LIMIT 1 ";
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertNotNull($row);
+        self::assertSame('rent3', $row['name']);
+        self::assertSame('flo@flo3.fr', $row['email']);
+
+        // --------------------------------------------------
+        $rows = $qb
+            ->reset()
+            ->inTable('test')
+            ->whereBetween('created_at', '2021-10-01', '2021-12-01')
+            ->selectMany(['name']);
+
+        $expected = "SELECT name FROM 'test' WHERE created_at BETWEEN ? AND ? ";
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertCount(2, $rows);
+
+        self::assertFalse(isset($rows[0]['id']));
+        self::assertFalse(isset($rows[0]['email']));
+        self::assertFalse(isset($rows[0]['created_at']));
+
+        self::assertSame('Flo2', $rows[0]['name']);
+        self::assertSame('rent3', $rows[1]['name']);
+    }
+
+    public function test_nested_where(): void
+    {
+        // arrange
+        $qb = $this->seedForSelect();
+
+        // act & assert, several times
+        // --------------------------------------------------
+        $row = $qb
+            ->reset()
+            ->inTable('test')
+            ->whereGroup(function (QueryBuilder $qb): void {
+                $qb
+                    ->whereNotIn('stuff', [1, 2])
+                    ->orWhereGroup(fn ($qb) => $qb->where('field', '<=', 1)->where('field2', 'not like', 'stuf%'));
+            })
+            ->where('name', '=', 'stuff');
+
+        try {
+            $qb->selectSingle();
+        } catch (PDOException $e) {
+            // this is oK, some columns in the query do not exists
+        }
+
+        $expected = "SELECT * FROM 'test' WHERE (stuff NOT IN (?, ?) OR (field <= ? AND field2 NOT LIKE ?)) AND name = ? LIMIT 1 ";
         self::assertSame($expected, $qb->toSql());
     }
 
@@ -272,9 +403,7 @@ final class QueryBuilderTest extends TestCase
     public function test_all_other(): void
     {
         $qb = new QueryBuilder(self::$pdo);
-        $qb->select('field as field2')
-            ->select('field')
-            ->select('otherField')
+        $qb
             ->fromTable('test')
             ->join('otherTable')->on('field', 'value')
             ->where('field', 'LIKE', '%value')
@@ -282,11 +411,11 @@ final class QueryBuilderTest extends TestCase
             ->groupBy('field')
             ->having('field', 'value')
             ->orHaving('field2', 'value2')
-            ->orderBy('field', 'DESC')
-            ->limit(10, 0)
+            ->mostRecentFirst('field')
+            ->limit(10)
             ->offset(5);
 
-        $expected = 'SELECT field as field2, field, otherField FROM test '
+        $expected = "SELECT * FROM 'test' "
             . "INNER JOIN otherTable ON field = 'value' "
             . "WHERE field LIKE '%value' OR field IS NOT NULL "
             . 'GROUP BY field '
