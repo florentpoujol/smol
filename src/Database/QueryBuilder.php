@@ -6,8 +6,13 @@ namespace FlorentPoujol\SmolFramework\Database;
 
 use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
+use ReflectionClass;
+use ReflectionException;
 use Stringable;
 
+/**
+ * @template HydratedEntityType of object
+ */
 final class QueryBuilder
 {
     public function __construct(
@@ -65,7 +70,7 @@ final class QueryBuilder
     /**
      * @param array<string>|string $fields
      *
-     * @return array<array<string, bool|int|string>>
+     * @return array<array<string, bool|int|string>>|array<HydratedEntityType>
      */
     public function selectMany(array|string $fields = []): array
     {
@@ -78,20 +83,30 @@ final class QueryBuilder
             $this->havingBindings
         ));
 
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($result === false) {
+        if ($rows === false) {
             $strFields = "'" . implode("', '", (array) $fields) . "'";
             throw new SmolFrameworkException("Select request for fields $strFields could not be performed.");
         }
 
-        return $result;
+        if ($rows === []) {
+            return [];
+        }
+
+        if ($this->hydrateEntityFqcn === null) {
+            return $rows;
+        }
+
+        return $this->getHydratedEntities($rows);
     }
 
     /**
      * @param array<string>|string $fields
+     *
+     * @return null|array<string, bool|int|string>|HydratedEntityType
      */
-    public function selectSingle(array|string $fields = []): ?array
+    public function selectSingle(array|string $fields = []): null|array|object
     {
         $this->limit(1);
 
@@ -102,6 +117,64 @@ final class QueryBuilder
         }
 
         return $row[0];
+    }
+
+    /**
+     * @var null|class-string<HydratedEntityType>
+     */
+    private ?string $hydrateEntityFqcn = null;
+
+    /**
+     * @param class-string<HydratedEntityType> $entityFqcn
+     */
+    public function hydrate(string $entityFqcn): self
+    {
+        $this->hydrateEntityFqcn = $entityFqcn;
+
+        return $this;
+    }
+
+    /**
+     * @param array<array<string, bool|int|string>> $rows
+     *
+     * @return array<HydratedEntityType>
+     */
+    private function getHydratedEntities(array $rows): array
+    {
+        $entity = new $this->hydrateEntityFqcn();
+        $reflectionClass = new ReflectionClass($entity);
+
+        $arrayKeys = array_keys($rows[0]);
+
+        /** @var array<string, \ReflectionProperty> $reflectionProperties */
+        $reflectionProperties = [];
+        foreach ($arrayKeys as $arrayKey) {
+            $propertyName = $arrayKey;
+            if (str_contains($arrayKey, '_')) {
+                // transform camel_case to snakeCase
+                $propertyName = lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $arrayKey))));
+            }
+
+            try {
+                $reflectionProperties[$arrayKey] = $reflectionClass->getProperty($propertyName);
+                $reflectionProperties[$arrayKey]->setAccessible(true);
+            } catch (ReflectionException $exception) {
+                // the array key doesn't match a property
+            }
+        }
+
+        /** @var array<HydratedEntityType> $entities */
+        $entities = [];
+        foreach ($rows as $row) {
+            $rowEntity = clone $entity;
+            $entities[] = $rowEntity;
+
+            foreach ($reflectionProperties as $arrayKey => $reflectionProperty) {
+                $reflectionProperty->setValue($rowEntity, $row[$arrayKey]);
+            }
+        }
+
+        return $entities;
     }
 
     private function buildSelectQueryString(): string
@@ -127,7 +200,7 @@ final class QueryBuilder
     public function count(): int
     {
         // calling selectMany() here since selectSingle() add a LIMIT clause
-        return $this->selectMany('COUNT(*) as _count')[0]['_count'] ?? 0;
+        return $this->selectMany('COUNT(*) AS _count')[0]['_count'] ?? 0; // @phpstan-ignore-line
     }
 
     // --------------------------------------------------
@@ -605,15 +678,13 @@ final class QueryBuilder
      */
     public function groupBy(array|string $fields): self
     {
-        $this->groupBy[] = array_map([$this, 'quoteField'], (array) $fields);
+        $this->groupBy[] = array_map([$this, 'quoteField'], (array) $fields); // @phpstan-ignore-line (Array (array<string>) does not accept array<string>.) ?
 
         return $this;
     }
 
     // --------------------------------------------------
     // having
-
-    // where
 
     /** @var array<ConditionalClause|ConditionalGroup> */
     private array $havingClauses = [];

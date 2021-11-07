@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
+use DateTime;
 use FlorentPoujol\SmolFramework\Database\QueryBuilder;
 use PDO;
 use PDOException;
@@ -87,6 +88,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'INSERT INTO `test` (`name`, `email`) VALUES (?, ?), (?, ?)';
         self::assertSame($expected, $qb->toSql());
 
+        /** @var array<array> $entries */
         $entries = $qb->reset()->selectMany();
 
         self::assertTrue(isset($entries[0]['id']));
@@ -131,6 +133,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'UPDATE `test` SET `email` = ? WHERE `name` = ?';
         self::assertSame($expected, $qb->toSql());
 
+        /** @var array<array> $entries */
         $entries = $qb->reset()->selectMany();
         self::assertCount(2, $entries);
 
@@ -159,6 +162,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'DELETE FROM `test` WHERE `email` = ? ';
         self::assertSame($expected, $qb->toSql());
 
+        /** @var array<array> $entries */
         $entries = $qb->reset()->selectMany();
         self::assertCount(1, $entries);
 
@@ -199,6 +203,7 @@ final class QueryBuilderTest extends TestCase
 
         // act & assert, several times
         // --------------------------------------------------
+        /** @var array<string, mixed> $row */
         $row = $qb
             ->reset()
             ->inTable('test')
@@ -211,6 +216,7 @@ final class QueryBuilderTest extends TestCase
         self::assertNull($row);
 
         // --------------------------------------------------
+        /** @var array<string, mixed> $row */
         $row = $qb
             ->reset()
             ->inTable('test')
@@ -225,6 +231,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('flo@flo3.fr', $row['email']);
 
         // --------------------------------------------------
+        /** @var array<string, mixed> $row */
         $row = $qb
             ->reset()
             ->inTable('test')
@@ -240,6 +247,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('flo@flo3.fr', $row['email']);
 
         // --------------------------------------------------
+        /** @var array<string, mixed> $row */
         $row = $qb
             ->reset()
             ->inTable('test')
@@ -254,6 +262,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('flo@flo3.fr', $row['email']);
 
         // --------------------------------------------------
+        /** @var array<array<string, mixed>> $rows */
         $rows = $qb
             ->reset()
             ->inTable('test')
@@ -360,6 +369,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'SELECT * FROM `test` INNER JOIN `join_table` AS `jt` ON `jt`.`test_name` = `test`.`name` WHERE `name` = ? ';
         self::assertSame($expected, $qb->toSql());
 
+        /** @var array<array> $entries */
         $entries = $qb->selectMany();
 
         self::assertCount(2, $entries);
@@ -371,5 +381,58 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('Flo2', $entries[1]['name']);
         self::assertSame('Flo2', $entries[1]['test_name']);
         self::assertSame('joined_value2', $entries[1]['joined_value']);
+    }
+
+    public function test_hydratation(): void
+    {
+        // act
+        $qb = new QueryBuilder($this->pdo);
+        $now = date('Y-m-d H:i:s');
+        $qb
+            ->inTable('test')
+            ->insertMany([
+                [
+                    'name' => 'Florent2',
+                    'email' => 'flo@flo2.fr',
+                    'created_at' => $now,
+                ],
+                [
+                    'name' => 'Florent3',
+                    'email' => 'flo@flo3.fr',
+                    'created_at' => $now,
+                ],
+            ]);
+
+        // assert
+        /** @var array<\Tests\FlorentPoujol\SmolFramework\MyEntity> $entries */
+        $entries = $qb->reset()
+            ->hydrate(MyEntity::class)
+            ->selectMany();
+
+        self::assertInstanceOf(MyEntity::class, $entries[0]);
+        self::assertSame(1, $entries[0]->getId());
+        self::assertSame('Florent2', $entries[0]->name);
+        self::assertSame($now, $entries[0]->getCreatedAt()->format('Y-m-d H:i:s'));
+
+        self::assertSame(2, $entries[1]->getId());
+        self::assertSame('Florent3', $entries[1]->name);
+        self::assertSame($now, $entries[1]->getCreatedAt()->format('Y-m-d H:i:s'));
+    }
+}
+
+final class MyEntity
+{
+    private int $id;
+    public string $name;
+    private string $createdAt;
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getCreatedAt(): DateTime
+    {
+        return new DateTime($this->createdAt);
     }
 }
