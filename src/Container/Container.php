@@ -8,6 +8,7 @@ use FlorentPoujol\SmolFramework\DailyFileLogger;
 use FlorentPoujol\SmolFramework\Psr15RequestHandler;
 use FlorentPoujol\SmolFramework\ServiceFactories;
 use Nyholm\Psr7\Request;
+use PDO;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -17,22 +18,26 @@ use Psr\Log\LoggerInterface;
 use ReflectionNamedType;
 use ReflectionUnionType;
 
+/**
+ * @template ServiceType
+ */
 final class Container implements ContainerInterface
 {
-    /** @var array<class-string, callable|string|array> */
+    /** @var array<class-string<ServiceType>, callable|string|array> */
     private array $factories = [
         ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
         ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
         RequestHandlerInterface::class => Psr15RequestHandler::class,
         RequestInterface::class => Request::class, // client request
         LoggerInterface::class => DailyFileLogger::class,
+        PDO::class => [ServiceFactories::class, 'makePdo'],
     ];
 
     /**
      * Values cached by get().
      * Typically, object instances but may be any values returned by closures or found in services.
      *
-     * @var array<string|class-string, null|object>
+     * @var array<class-string<ServiceType>, null|object<ServiceType>
      */
     private array $instances = [];
 
@@ -69,7 +74,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string                                     $serviceName
+     * @param class-string<ServiceType>                                $serviceName
      * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
@@ -78,7 +83,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string|string $serviceName
+     * @param class-string<ServiceType> $serviceName
+     * @param ServiceType $instance
      */
     public function setInstance(string $serviceName, object $instance): void
     {
@@ -86,7 +92,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string|string $id
+     * @param class-string<ServiceType> $id
      */
     public function has(string $id): bool
     {
@@ -94,9 +100,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string|string $id
+     * @param class-string<ServiceType> $id
+     *
+     * @return ServiceType
      */
-    public function get(string $id): ?object
+    public function get(string $id): object
     {
         if (isset($this->instances[$id])) {
             return $this->instances[$id];
