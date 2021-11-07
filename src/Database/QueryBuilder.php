@@ -790,6 +790,14 @@ final class QueryBuilder
         return $this;
     }
 
+    public function paginate(int $page, int $perPage): self
+    {
+        $this->limit($perPage);
+        $this->offset($perPage * ($page - 1));
+
+        return $this;
+    }
+
     // --------------------------------------------------
     // non-query building methods
 
