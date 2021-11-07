@@ -36,7 +36,7 @@ if (! function_exists('__')) {
     }
 }
 
-if (! function_exists('dump')) {
+if (! function_exists('dump')) { // when it exists it is typically provided by the Symfony var_dumper component
     function dump(mixed ...$values): void
     {
         if (function_exists('xdebug_var_dump')) {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Database;
 
-use Exception;
 use FlorentPoujol\SmolFramework\SmolFrameworkException;
 use PDO;
+use Stringable;
 
 final class QueryBuilder
 {
@@ -36,7 +36,6 @@ final class QueryBuilder
         $this->join = [];
         $this->lastJoinId = -1;
         $this->onClauses = [];
-        $this->joinBindings = [];
 
         $this->whereClauses = [];
         $this->whereBindings = [];
@@ -50,11 +49,6 @@ final class QueryBuilder
         $this->havingBindings = [];
 
         return $this;
-    }
-
-    public function getBindings(): array
-    {
-        return array_merge($this->joinBindings, $this->whereBindings, $this->havingBindings);
     }
 
     public const ACTION_INSERT = 'INSERT';
@@ -80,7 +74,6 @@ final class QueryBuilder
 
         $statement = $this->pdo->prepare($this->toSql());
         $statement->execute(array_merge(
-            $this->joinBindings,
             $this->whereBindings,
             $this->havingBindings
         ));
@@ -115,7 +108,7 @@ final class QueryBuilder
     {
         $fields = '*';
         if ($this->fields !== []) {
-            $fields = implode(', ', $this->fields);
+            $fields = implode(', ', array_map([$this, 'quoteField'], $this->fields));
         }
         // do not force to prefix the fields with the table name because it is not necessarily what is wanted
 
@@ -193,7 +186,7 @@ final class QueryBuilder
 
         $fields = $this->fields;
         foreach ($fields as $i => $field) {
-            $fields[$i] = $this->quote($field);
+            $fields[$i] = $this->quoteField($field);
         }
 
         $rowPlaceholders = str_repeat('?, ', count($fields));
@@ -230,7 +223,7 @@ final class QueryBuilder
         $sql = "UPDATE $this->table SET ";
 
         foreach ($this->fields as $field) {
-            $sql .= $this->quote($field) . ' = ?, ';
+            $sql .= $this->quoteField($field) . ' = ?, ';
         }
 
         $sql = substr($sql, 0, -2) . ' ' . $this->buildWhereQueryString();
@@ -257,14 +250,14 @@ final class QueryBuilder
 
     public function fromTable(string $tableName): self
     {
-        $this->table = $this->quote($tableName);
+        $this->table = $this->quoteField($tableName);
 
         return $this;
     }
 
     public function inTable(string $tableName): self
     {
-        $this->table = $this->quote($tableName);
+        $this->table = $this->quoteField($tableName);
 
         return $this;
     }
@@ -277,13 +270,10 @@ final class QueryBuilder
 
     private int $lastJoinId = -1;
 
-    /** @var array<int, array<array<string, mixed>>> "on" clauses by join id */
+    /** @var array<int, array<ConditionalClause|ConditionalGroup>> "on" clauses by join id */
     private array $onClauses = [];
     // unlike where and having
     // on is an array or conditional arrays
-
-    /** @var array<bool|int|string> All the values of the or clauses */
-    private array $joinBindings = [];
 
     private function buildJoinQueryString(): string
     {
@@ -303,8 +293,16 @@ final class QueryBuilder
 
     public function join(string $tableName, string $alias = null, string $joinType = 'INNER'): self
     {
+        $tableName = $this->quoteField($tableName);
         if ($alias !== null) {
-            $tableName .= " AS $alias";
+            $tableName .= ' AS ' . $this->quoteField($alias);
+        }
+
+        $joinType = strtoupper($joinType);
+
+        $allowedJoinTypes = ['INNER', 'LEFT', 'RIGHT', 'FULL', 'FULL OUTER'];
+        if (! in_array($joinType, $allowedJoinTypes, true)) {
+            throw new SmolFrameworkException("Unexpected join type '$joinType'.");
         }
 
         $joinType .= ' JOIN';
@@ -330,16 +328,25 @@ final class QueryBuilder
         return $this->join($tableName, $alias, 'FULL');
     }
 
-    public function on(callable|string $field, string $sign = null, int|string $value = null, string $cond = 'AND'): self
+    public function on(string $field, string $operator, string $otherField, bool $or = false): self
     {
-        $this->onClauses[$this->lastJoinId] ??= [];
+        $clause = new ConditionalClause();
+        $clause->condition = $or ? 'OR' : 'AND';
 
-        return $this->addConditionalClause($this->onClauses[$this->lastJoinId], $field, $sign, $value, $cond);
+        $operator = strtoupper($operator);
+        $this->sanitizeComparisonOperator($operator);
+
+        $clause->expression = $this->quoteField($field) . " $operator " . $this->quoteField($otherField);
+
+        $this->onClauses[$this->lastJoinId] ??= [];
+        $this->onClauses[$this->lastJoinId][] = $clause;
+
+        return $this;
     }
 
-    public function orOn(callable|string $field, string $sign = null, int|string $value = null): self
+    public function orOn(string $field, string $operator, string $otherField): self
     {
-        return $this->on($field, $sign, $value, 'OR');
+        return $this->on($field, $operator, $otherField, true);
     }
 
     // --------------------------------------------------
@@ -359,6 +366,29 @@ final class QueryBuilder
         }
 
         return $where;
+    }
+
+    /** @var array<string> */
+    private array $comparisonOperators = [
+        // copy from Laravel's Builder
+        '=', '<', '>', '<=', '>=', '<>', '!=', '<=>',
+        'LIKE', 'NOT LIKE', 'ILIKE', 'NOT ILIKE', 'LIKE BINARY',
+        '&', '|', '^', '<<', '>>', '&~',
+        'RLIKE', 'NOT RLIKE', 'REGEXP', 'NOT REGEXP',
+        '~', '~*', '!~', '!~*', '~~*', '!~~*',
+        'SIMILAR TO', 'NOT SIMILAR TO',
+    ];
+
+    /**
+     * @throws \FlorentPoujol\SmolFramework\SmolFrameworkException
+     *
+     * @return void|never-return
+     */
+    private function sanitizeComparisonOperator(string $operator): void
+    {
+        if (! in_array($operator, $this->comparisonOperators, true)) {
+            throw new SmolFrameworkException("Comparison operator '$operator' is not allowed.");
+        }
     }
 
     public function whereRaw(string $raw, bool $or = false): self
@@ -406,61 +436,46 @@ final class QueryBuilder
         return $this->whereGroup($group, true);
     }
 
-    /** @var array<string> */
-    private array $comparisonOperators = [
-        '=', '!=', '<>', '>', '>=', '<', '<=', 'LIKE', 'NOT LIKE',
-    ];
-
-    /**
-     * @throws \FlorentPoujol\SmolFramework\SmolFrameworkException
-     *
-     * @return void|never-return
-     */
-    private function sanitizeComparisonOperator(string $operator): void
+    public function where(string $field, string $operator, bool|int|string|Stringable $value, bool $or = false): self
     {
-        if (! in_array($operator, $this->comparisonOperators, true)) {
-            throw new SmolFrameworkException("Comparison operator '$operator' is not allowed.");
+        if (is_object($value)) {
+            $value = (string) $value;
         }
-    }
 
-    public function where(string $field, string $operator, bool|int|string $value, bool $or = false): self
-    {
         $this->whereBindings[] = $value;
 
         $operator = strtoupper($operator);
         $this->sanitizeComparisonOperator($operator);
 
-        // $sql = $this->quote($field) . " $operator ?"; // SQLite doesn't like when the field in the where clause are quoted
-        $sql = "$field $operator ?";
-
+        $sql = $this->quoteField($field) . " $operator ?";
         $this->whereRaw($sql, $or);
 
         return $this;
     }
 
-    public function orWhere(string $field, string $sign, bool|int|string $value): self
+    public function orWhere(string $field, string $sign, bool|int|string|Stringable $value): self
     {
         return $this->where($field, $sign, $value, true);
     }
 
     public function whereNull(string $field): self
     {
-        return $this->whereRaw($this->quote($field) . ' IS NULL');
+        return $this->whereRaw($this->quoteField($field) . ' IS NULL');
     }
 
     public function orWhereNull(string $field): self
     {
-        return $this->whereRaw($this->quote($field) . ' IS NULL', true);
+        return $this->whereRaw($this->quoteField($field) . ' IS NULL', true);
     }
 
     public function whereNotNull(string $field): self
     {
-        return $this->whereRaw($this->quote($field) . ' IS NOT NULL');
+        return $this->whereRaw($this->quoteField($field) . ' IS NOT NULL');
     }
 
     public function orWhereNotNull(string $field): self
     {
-        return $this->whereRaw($this->quote($field) . ' IS NOT NULL', true);
+        return $this->whereRaw($this->quoteField($field) . ' IS NOT NULL', true);
     }
 
     public function whereBetween(string $field, int|string $min, int|string $max, bool $or = false, bool $not = false): self
@@ -468,8 +483,8 @@ final class QueryBuilder
         $this->whereBindings[] = $min;
         $this->whereBindings[] = $max;
 
-        // "field BETWEEN ? AND ?"
-        $sql = $field . ($not ? ' NOT' : '') . ' BETWEEN ? AND ?';
+        // "`field` BETWEEN ? AND ?"
+        $sql = $this->quoteField($field) . ($not ? ' NOT' : '') . ' BETWEEN ? AND ?';
 
         return $this->whereRaw($sql, $or);
     }
@@ -498,8 +513,8 @@ final class QueryBuilder
 
         $placeholders = substr(str_repeat('?, ', count($values)), 0, -2);
 
-        // "field IN (?,?)"
-        $sql = $field . ($not ? ' NOT' : '') . " IN ($placeholders)";
+        // "`field` IN (?,?)"
+        $sql = $this->quoteField($field) . ($not ? ' NOT' : '') . " IN ($placeholders)";
 
         return $this->whereRaw($sql, $or);
     }
@@ -545,7 +560,7 @@ final class QueryBuilder
 
     public function orderBy(string $field, bool $ascending = true): self
     {
-        $this->orderBy[] = $this->quote($field) . ($ascending ? ' ASC' : ' DESC');
+        $this->orderBy[] = $this->quoteField($field) . ($ascending ? ' ASC' : ' DESC');
 
         return $this;
     }
@@ -590,9 +605,7 @@ final class QueryBuilder
      */
     public function groupBy(array|string $fields): self
     {
-        foreach ((array) $fields as $field) {
-            $this->groupBy[] = $this->quote($field);
-        }
+        $this->groupBy[] = array_map([$this, 'quoteField'], (array) $fields);
 
         return $this;
     }
@@ -600,7 +613,9 @@ final class QueryBuilder
     // --------------------------------------------------
     // having
 
-    /** @var array<string> */
+    // where
+
+    /** @var array<ConditionalClause|ConditionalGroup> */
     private array $havingClauses = [];
 
     /** @var array<bool|int|string> All the values of the having clauses that match the placeholders */
@@ -609,21 +624,78 @@ final class QueryBuilder
     private function buildHavingQueryString(): string
     {
         $having = $this->buildConditionalQueryString($this->havingClauses);
-        if ($having === '') {
-            return '';
+        if ($having !== '') {
+            $having = "HAVING $having ";
         }
 
-        return "HAVING $having ";
+        return $having;
     }
 
-    public function having(string $field, string $sign = null, mixed $value = null, string $cond = 'AND'): self
+    public function havingRaw(string $raw, bool $or = false): self
     {
-        return $this->addConditionalClause($this->havingClauses, $field, $sign, $value, $cond);
+        $clause = new ConditionalClause();
+        $clause->condition = $or ? 'OR' : 'AND';
+        $clause->expression = $raw;
+
+        $this->havingClauses[] = $clause;
+
+        return $this;
     }
 
-    public function orHaving(string $field, string $sign = null, mixed $value = null): self
+    public function orHavingRaw(string $raw): self
     {
-        return $this->having($field, $sign, $value, 'OR');
+        return $this->havingRaw($raw, true);
+    }
+
+    public function havingGroup(callable $group, bool $or = false): self
+    {
+        $coutBefore = count($this->havingClauses);
+        $group($this);
+        $coutAfter = count($this->havingClauses);
+
+        if ($coutAfter - $coutBefore <= 0) {
+            return $this;
+        }
+
+        // if the closure as added having clauses ...
+        $clause = new ConditionalGroup();
+        $clause->condition = $or ? 'OR' : 'AND';
+
+        // actually remove them from the $this->havingClauses property
+        // to nest them in the ConditionalGroup clause.
+        // And this all nicely works recursively :)
+        $clause->clauses = array_splice($this->havingClauses, $coutBefore);
+
+        $this->havingClauses[] = $clause;
+
+        return $this;
+    }
+
+    public function orHavingGroup(callable $group): self
+    {
+        return $this->havingGroup($group, true);
+    }
+
+    public function having(string $field, string $operator, bool|int|string|Stringable $value, bool $or = false): self
+    {
+        if (is_object($value)) {
+            $value = (string) $value;
+        }
+
+        $this->havingBindings[] = $value;
+
+        $operator = strtoupper($operator);
+        $this->sanitizeComparisonOperator($operator);
+
+        $sql = $this->quoteField($field) . " $operator ?";
+        $this->havingRaw($sql, $or);
+
+        return $this;
+    }
+
+    public function orHaving(string $field, string $sign, bool|int|string|Stringable $value): self
+    {
+        return $this->having($field, $sign, $value, true);
     }
 
     // --------------------------------------------------
@@ -702,73 +774,19 @@ final class QueryBuilder
     }
 
     /**
-     * @param array<ConditionalClause|ConditionalGroup> $clauses
-     * @param array<string, mixed>|callable|string      $field
-     *
-     * @raturn array<>|array
+     * Escape field names by adding backticks (`) around them.
      */
-    private function addConditionalClause(
-        array $clauses,
-        array|callable|string $field,
-        string $sign = null,
-        string|int|bool $value = null,
-        string $condition = 'AND'
-    ): ConditionalClause|ConditionalGroup {
-        if (is_callable($field)) {
-            $beforeCount = count($clauses);
-            $field($this);
-            $afterCount = count($clauses);
-            if ($afterCount === $beforeCount) {
-                return $this;
-            }
-
-            $clause = new ConditionalGroup();
-            $clause->condition = $condition;
-            $clause->clauses = array_splice($clauses, $beforeCount);
-
-            return $this;
-        }
-
-        if (is_array($field)) {
-            // an assoc array, like if the where() was called several times
-            foreach ($field as $fieldName => $_value) {
-                $this->addConditionalClause($clauses, "$fieldName = :$fieldName", condition: $condition);
-            }
-
-            $this->setInputParams($field);
-
-            return $this;
-        }
-
-        $clause = new ConditionalClause();
-        $clause->condition = $condition;
-
-        if ($sign === null && $value === null) {
-            $clause->expression = $field;
-        } elseif ($sign !== null && $value === null) {
-            $clause->expression = "$field = " . $this->quote($sign);
-        } elseif ($sign !== null && $value !== null) {
-            $clause->expression = "$field $sign " . $this->quote($value);
-        }
-
-        // $clauses[] = $clause;
-
-        return $clause;
-    }
-
-    public function quote(bool|int|string $value, int $type = PDO::PARAM_STR): string
+    private function quoteField(string $field): string
     {
-        if (is_bool($value)) {
-            $type = PDO::PARAM_BOOL;
-        } elseif (is_int($value)) {
-            $type = PDO::PARAM_INT;
+        $segments = explode('.', $field);
+
+        $quotedField = '';
+        foreach ($segments as $segment) {
+            if (! str_starts_with($segment, '`') || ! str_ends_with($segment, '`')) {
+                $quotedField .= "`$segment`.";
+            }
         }
 
-        $quoted = $this->pdo->quote((string) $value, $type);
-        if ($quoted === false) { // @phpstan-ignore-line (PHPStan thinks $quoted can't be null)
-            throw new Exception("PDO can't quote value '$value' for current DB driver");
-        }
-
-        return $quoted;
+        return trim($quotedField, '.');
     }
 }
