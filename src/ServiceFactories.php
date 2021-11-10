@@ -25,7 +25,7 @@ final class ServiceFactories
             $psr17Factory,
         );
 
-        return $serverRequestFactory->fromGlobals();
+        return new ServerRequest($serverRequestFactory->fromGlobals());
     }
 
     public static function makeResponse(): ResponseInterface
