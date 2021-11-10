@@ -34,7 +34,7 @@ final class Route
         string $uri,
         callable|string $action,
         array $placeholderRegexes = [],
-        ?string $name = null
+        ?string $name = null,
     ) {
         $this->methods = array_map('strtoupper', (array) $methods);
         $this->uri = '/' . trim($uri, ' /'); // space + /
@@ -107,11 +107,8 @@ final class Route
             return true;
         }
 
-        if (! str_contains($this->uri, '{')) {
-            // note that this never really happen since we are only calling match() for routes with the same prefix
-            // so if the exact comparison isn't true, then the route must have a placeholder
-            return false;
-        }
+        // since the exact comparison doesn't match, this route is either complitely different
+        // or more likely has the same prefix (since the router only call match() for routes with a matching prefix), but has regex segments
 
         $this->buildRegexUri();
 

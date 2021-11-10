@@ -22,24 +22,41 @@ final class Router
     public function __construct(
         private string $baseAppPath
     ) {
-    }
-
-    public function getRouteByName(string $name): ?Route
-    {
-        return $this->routesByName[$name] ?? null;
-    }
-
-    public function resolveRoute(): ?Route
-    {
         $this->collectRoutes();
+    }
 
-        $method = strtoupper($_SERVER['REQUEST_METHOD']);
+    /**
+     * @throws \FlorentPoujol\SmolFramework\SmolFrameworkException When no route with that name is found
+     */
+    public function getRouteByName(string $name): Route
+    {
+        if (isset($this->routesByName[$name])) {
+            return $this->routesByName[$name];
+        }
+
+        foreach ($this->routes as $routesByPrefix) {
+            foreach ($routesByPrefix as $routes) {
+                foreach ($routes as $route) {
+                    if ($route->getName() === $name) {
+                        $this->routesByName[$name] = $route;
+
+                        return $route;
+                    }
+                }
+            }
+        }
+
+        throw new SmolFrameworkException("Unknown route name '$name'.");
+    }
+
+    public function resolveRoute(string $method, string $uri): ?Route
+    {
         if (! isset($this->routes[$method])) {
             // no routes
             return null;
         }
 
-        $uri = '/' . trim($_SERVER['REQUEST_URI'], ' /');
+        $uri = '/' . trim($uri, ' /');
 
         foreach ($this->routes[$method] as $prefix => $routes) {
             if (! str_starts_with($uri, $prefix)) {
@@ -61,6 +78,13 @@ final class Router
 
     private function collectRoutes(): void
     {
+        $cachePath = $this->baseAppPath . '/storage/frameworkCache/routes.txt';
+        if (file_exists($cachePath) && is_readable($cachePath)) {
+            $this->collectRoutesFromCache($cachePath);
+
+            return;
+        }
+
         $files = scandir($this->baseAppPath . '/routes');
         if (! is_array($files)) {
             throw new SmolFrameworkException("Count not read route folder at '$this->baseAppPath . '/routes'.");
@@ -71,7 +95,6 @@ final class Router
                 continue;
             }
 
-            $filename = str_replace('.php', '', $path);
             $routes = require $this->baseAppPath . '/routes/' . $path;
 
             /** @var \FlorentPoujol\SmolFramework\Route $route */
@@ -93,8 +116,24 @@ final class Router
             }
         }
 
-        foreach ($this->routes as &$routesByPrefix) { // /!\ REFERENCE
+        foreach ($this->routes as $method => $routesByPrefix) {
             krsort($routesByPrefix); // sort alphabetically in reverse order, so that the longest prefixes are first
+            $this->routes[$method] = $routesByPrefix;
         }
+    }
+
+    private function collectRoutesFromCache(string $cachePath): void
+    {
+        $serializedRoutes = file_get_contents($cachePath);
+        assert(is_string($serializedRoutes));
+
+        $this->routes = unserialize($serializedRoutes, ['allowed_classes' => [Route::class]]);
+    }
+
+    public function cacheCollectedRoutes(): void
+    {
+        $path = $this->baseAppPath . '/storage/frameworkCache/routes.txt';
+
+        file_put_contents($path, serialize($this->routes));
     }
 }
