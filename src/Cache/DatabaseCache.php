@@ -29,6 +29,13 @@ final class DatabaseCache implements CacheInterface
             ]);
     }
 
+    public function has(string $key): bool
+    {
+        return $this->queryBuilder->reset()
+            ->where('key', '=', $this->prefix . $key)
+            ->exists();
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $key = $this->prefix . $key;
@@ -51,6 +58,13 @@ final class DatabaseCache implements CacheInterface
             ->delete();
 
         return $default;
+    }
+
+    public function delete(string $key): void
+    {
+        $this->queryBuilder->reset()
+            ->where('key', '=', $this->prefix . $key)
+            ->delete();
     }
 
     public function flushValues(string $prefix = ''): int

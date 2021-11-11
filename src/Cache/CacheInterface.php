@@ -8,7 +8,11 @@ interface CacheInterface
 {
     public function set(string $key, mixed $value, int $ttlInSeconds = null): void;
 
+    public function has(string $key): bool;
+
     public function get(string $key, mixed $default = null): mixed;
+
+    public function delete(string $key): void;
 
     /**
      * @return int The number of deleted entries

@@ -23,6 +23,11 @@ final class RedisCache implements CacheInterface
         }
     }
 
+    public function has(string $key): bool
+    {
+        return $this->redis->exists($this->prefix . $key) > 0;
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $value = $this->redis->get($this->prefix . $key);
@@ -31,6 +36,11 @@ final class RedisCache implements CacheInterface
         }
 
         return unserialize($value);
+    }
+
+    public function delete(string $key): void
+    {
+        $this->redis->del($this->prefix . $key);
     }
 
     public function flushValues(string $prefix = ''): int
