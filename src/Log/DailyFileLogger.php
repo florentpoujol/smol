@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Log;
 
 use Psr\Log\AbstractLogger;
 use Stringable;

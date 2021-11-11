@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SmolFramework\DailyFileLogger;
+use FlorentPoujol\SmolFramework\Log\DailyFileLogger;
 use PHPUnit\Framework\TestCase;
 
 final class LoggerTest extends TestCase
