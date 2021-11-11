@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Container;
 
+use FlorentPoujol\SmolFramework\Cache\Cache;
+use FlorentPoujol\SmolFramework\Cache\CacheInterface;
 use FlorentPoujol\SmolFramework\DailyFileLogger;
 use FlorentPoujol\SmolFramework\Psr15RequestHandler;
-use FlorentPoujol\SmolFramework\ServiceFactories;
 use Nyholm\Psr7\Request;
 use PDO;
 use Psr\Container\ContainerInterface;
@@ -15,6 +16,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use Redis;
 use ReflectionNamedType;
 use ReflectionUnionType;
 
@@ -31,6 +33,8 @@ final class Container implements ContainerInterface
         RequestInterface::class => Request::class, // client request
         LoggerInterface::class => DailyFileLogger::class,
         PDO::class => [ServiceFactories::class, 'makePdo'],
+        Redis::class => [ServiceFactories::class, 'makeRedis'],
+        CacheInterface::class => Cache::class,
     ];
 
     /**
@@ -74,7 +78,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string<ServiceType>                                $serviceName
+     * @param class-string<ServiceType>                        $serviceName
      * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
      */
     public function setFactory(string $serviceName, callable|string|array $factory): void
@@ -84,7 +88,7 @@ final class Container implements ContainerInterface
 
     /**
      * @param class-string<ServiceType> $serviceName
-     * @param ServiceType $instance
+     * @param ServiceType               $instance
      */
     public function setInstance(string $serviceName, object $instance): void
     {

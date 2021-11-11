@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Container;
 
-use FlorentPoujol\SmolFramework\Container\Container;
+use FlorentPoujol\SmolFramework\ConfigRepository;
+use FlorentPoujol\SmolFramework\ServerRequest;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use PDO;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Redis;
 
 final class ServiceFactories
 {
@@ -48,5 +50,23 @@ final class ServiceFactories
         $constructorArguments['options'] = array_merge($defaultOptions, $constructorArguments['options'] ?? []);
 
         return new PDO(...$constructorArguments);
+    }
+
+    public static function makeRedis(Container $container): Redis
+    {
+        $redis = new Redis();
+        /** @var array<string, string> $connectionInfo */
+        $connectionInfo = $container->get(ConfigRepository::class)->get('app.phpredis');
+
+        if (version_compare(phpversion('redis'), '5.3.0', '>=')) {
+            if (isset($connectionInfo['auth'])) {
+                $redis->auth($connectionInfo['auth']);
+                unset($connectionInfo['auth']);
+            }
+        }
+
+        $redis->pconnect(...$connectionInfo);
+
+        return $redis;
     }
 }
