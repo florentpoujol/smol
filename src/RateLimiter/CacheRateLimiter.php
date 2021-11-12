@@ -137,7 +137,7 @@ final class CacheRateLimiter
     public function clear(): void
     {
         if ($this->windowIsSliding) {
-            $this->cache->flushValues($this->cacheKey);
+            $this->cache->flush($this->cacheKey);
         }
 
         $this->cache->delete($this->cacheKey);

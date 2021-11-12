@@ -22,5 +22,5 @@ interface CacheInterface
     /**
      * @return int The number of deleted entries
      */
-    public function flushValues(string $prefix = ''): int;
+    public function flush(string $prefix = ''): int;
 }

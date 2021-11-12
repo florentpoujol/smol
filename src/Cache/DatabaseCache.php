@@ -78,7 +78,7 @@ final class DatabaseCache implements CacheInterface
             ->delete();
     }
 
-    public function flushValues(string $prefix = ''): int
+    public function flush(string $prefix = ''): int
     {
         if ($prefix === '') {
             $count = $this->queryBuilder->reset()->count();

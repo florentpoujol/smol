@@ -69,7 +69,7 @@ final class InMemoryCache implements CacheInterface
         unset($this->items[$this->prefix . $key]);
     }
 
-    public function flushValues(string $prefix = ''): int
+    public function flush(string $prefix = ''): int
     {
         if ($prefix === '') {
             $count = count($this->items);
@@ -104,42 +104,5 @@ final class InMemoryCache implements CacheInterface
         }
 
         return $count;
-    }
-
-    // --------------------------------------------------
-    // files stuff
-
-    private function getFilePath(): string
-    {
-        $prefixHash = $this->prefix !== '' ? md5($this->prefix) : 'cache';
-
-        return $this->baseAppPath . "/storage/git-ignored/cache/$prefixHash.txt";
-    }
-
-    /**
-     * @param null|array<string> $allowedClasses When null, all classes will be allowed to be deserialized. When an array, only the specified classes, plus the built-in CacheItem classe will be allowed to be deserialized.
-     */
-    public function loadFromFile(?array $allowedClasses = []): void
-    {
-        $filePath = $this->getFilePath();
-        if (! file_exists($filePath) || ! is_readable($filePath)) {
-            return;
-        }
-
-        $options = [];
-        if (is_array($allowedClasses)) {
-            $options = ['allowed_classes' => array_merge([CacheItem::class], $allowedClasses)];
-        }
-
-        $this->items = unserialize(file_get_contents($filePath), $options); // @phpstan-ignore-line
-
-        $this->flushExpiredValues();
-    }
-
-    public function writeInFile(): void
-    {
-        $this->flushExpiredValues();
-
-        file_put_contents($this->getFilePath(), serialize($this->items));
     }
 }

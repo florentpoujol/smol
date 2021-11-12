@@ -48,7 +48,7 @@ final class RedisCache implements CacheInterface
         $this->redis->del($this->prefix . $key);
     }
 
-    public function flushValues(string $prefix = ''): int
+    public function flush(string $prefix = ''): int
     {
         $keys = $this->redis->keys($this->prefix . $prefix . '*');
 
