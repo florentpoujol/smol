@@ -2,25 +2,15 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\RateLimiter;
+namespace FlorentPoujol\SmolFramework\Lock;
 
 use FlorentPoujol\SmolFramework\Cache\CacheInterface;
-use FlorentPoujol\SmolFramework\Framework;
 
 final class CacheLock
 {
-    public static function make(string $name, int $timeoutInSeconds): self
-    {
-        return new self(
-            $name,
-            $timeoutInSeconds,
-            Framework::getInstance()->getContainer()->get(CacheInterface::class)
-        );
-    }
-
     public function __construct(
         private string $name,
-        private int $timeoutInSeconds,
+        private int $ttlInSeconds,
         private CacheInterface $cache,
     ) {
     }
@@ -32,7 +22,7 @@ final class CacheLock
             return false;
         }
 
-        $this->cache->set($key, time(), $this->timeoutInSeconds);
+        $this->cache->set($key, 1, $this->ttlInSeconds);
 
         return true;
     }
@@ -42,7 +32,7 @@ final class CacheLock
         $this->cache->delete("locks:$this->name");
     }
 
-    public function waitFor(int $maxWaitTimeInSeconds, callable $callback, int $waitTimeInMilliseconds = 200): bool
+    public function wait(int $maxWaitTimeInSeconds, callable $callback, int $loopWaitTimeInMilliseconds = 200): bool
     {
         $maxTimestamp = time() + $maxWaitTimeInSeconds;
         $acquired = false;
@@ -60,7 +50,7 @@ final class CacheLock
                 break;
             }
 
-            usleep($waitTimeInMilliseconds * 1000);
+            usleep($loopWaitTimeInMilliseconds * 1000);
         } while ($maxTimestamp > time());
 
         return $acquired;
