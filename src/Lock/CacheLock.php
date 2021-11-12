@@ -32,27 +32,22 @@ final class CacheLock
         $this->cache->delete("locks:$this->name");
     }
 
-    public function wait(int $maxWaitTimeInSeconds, callable $callback, int $loopWaitTimeInMilliseconds = 200): bool
+    public function wait(int $maxWaitTimeInSeconds, callable $callback, int $loopWaitTimeInMilliseconds = 100): mixed
     {
         $maxTimestamp = time() + $maxWaitTimeInSeconds;
-        $acquired = false;
 
         do {
             if ($this->acquire()) {
-                $acquired = true;
-
                 try {
-                    $callback();
+                    return $callback();
                 } finally {
                     $this->release();
                 }
-
-                break;
             }
 
             usleep($loopWaitTimeInMilliseconds * 1000);
         } while ($maxTimestamp > time());
 
-        return $acquired;
+        return null;
     }
 }
