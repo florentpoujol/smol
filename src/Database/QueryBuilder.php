@@ -37,6 +37,7 @@ final class QueryBuilder
 
         $this->fields = [];
         $this->insertedRowCount = 0;
+        $this->upsertKeys = [];
 
         $this->join = [];
         $this->lastJoinId = -1;
@@ -57,7 +58,7 @@ final class QueryBuilder
     }
 
     public const ACTION_INSERT = 'INSERT';
-    public const ACTION_INSERT_REPLACE = 'INSERT OR REPLACE';
+    public const ACTION_UPSERT = 'UPSERT'; // insert or update
     public const ACTION_UPDATE = 'UPDATE';
     public const ACTION_DELETE = 'DELETE';
     public const ACTION_SELECT = 'SElECT';
@@ -189,8 +190,8 @@ final class QueryBuilder
         $query = "SELECT $fields FROM $this->table ";
         $query .= $this->buildJoinQueryString();
         $query .= $this->buildWhereQueryString();
-        $query .= $this->buildGroupByQueryString();
         $query .= $this->buildHavingQueryString();
+        $query .= $this->buildGroupByQueryString();
         $query .= $this->buildOrderByQueryString();
         $query .= $this->limit;
         $query .= $this->offset;
@@ -203,8 +204,8 @@ final class QueryBuilder
         $query = "SELECT EXISTS(SELECT 1 FROM $this->table ";
         $query .= $this->buildJoinQueryString();
         $query .= $this->buildWhereQueryString();
-        $query .= $this->buildGroupByQueryString();
         $query .= $this->buildHavingQueryString();
+        $query .= $this->buildGroupByQueryString();
         $query .= $this->buildOrderByQueryString();
         $query .= $this->limit;
         $query .= $this->offset;
@@ -235,11 +236,11 @@ final class QueryBuilder
     // --------------------------------------------------
     // insert
 
-    /**
-     * @var array<string> Names of the fields to insert, extracted from the first value
-     */
+    /** @var array<string> Names of the fields to insert, extracted from the first value */
     private array $fields = [];
     private int $insertedRowCount = 0;
+    /** @var array<string> */
+    private array $upsertKeys = [];
 
     /**
      * @param array<mixed> $rows
@@ -267,19 +268,6 @@ final class QueryBuilder
         return $this->insertMany([$row]);
     }
 
-    /**
-     * @param array<mixed> $rows
-     */
-    public function insertOrReplaceMany(array $rows): bool
-    {
-        return $this->insertMany($rows, self::ACTION_INSERT_REPLACE);
-    }
-
-    public function insertOrReplaceSingle(mixed $row): bool
-    {
-        return $this->insertMany([$row], self::ACTION_INSERT_REPLACE);
-    }
-
     private function buildInsertQueryString(): string
     {
         if ($this->fields === []) {
@@ -295,8 +283,102 @@ final class QueryBuilder
         $row = '(' . substr($rowPlaceholders, 0, -2) . '), ';
         $rows = str_repeat($row, $this->insertedRowCount);
 
-        return "$this->action INTO $this->table (" . implode(', ', $fields) . ')' .
+        return "INSERT INTO $this->table (" . implode(', ', $fields) . ')' .
             ' VALUES ' . substr($rows, 0, -2);
+    }
+
+    /**
+     * @param array<mixed>  $rows
+     * @param array<string> $keys
+     */
+    public function upsertMany(array $rows, array $keys): bool
+    {
+        $this->action = self::ACTION_UPSERT;
+
+        $this->fields = array_keys((array) $rows[0]);
+        $this->insertedRowCount = count($rows);
+        $this->upsertKeys = $keys;
+
+        // flatten all rows values, hopefully they are in the same order
+        $rowValues = [];
+        foreach ($rows as $row) {
+            $rowValues[] = array_values((array) $row);  // this suppose here that all rows have the same key in the same order
+        }
+
+        return $this->pdo
+            ->prepare($this->toSql())
+            ->execute(array_merge(...$rowValues));
+    }
+
+    /**
+     * @param array<string> $keys
+     */
+    public function upsertSingle(mixed $row, array $keys): bool
+    {
+        return $this->upsertMany([$row], $keys);
+    }
+
+    private function buildUpsertQueryString(): string
+    {
+        if ($this->fields === []) {
+            throw new SmolFrameworkException('No field is set for UPSERT action');
+        }
+
+        $fields = $this->fields;
+        foreach ($fields as $i => $field) {
+            $fields[$i] = $this->quoteField($field);
+        }
+
+        $rowPlaceholders = str_repeat('?, ', count($fields));
+        $row = '(' . substr($rowPlaceholders, 0, -2) . '), ';
+        $rows = str_repeat($row, $this->insertedRowCount);
+
+        $sql = "INSERT INTO $this->table (" . implode(', ', $fields) . ') ';
+        $sql .= 'VALUES ' . substr($rows, 0, -2);
+
+        $driver = strtolower($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME));
+        switch ($driver) {
+            case 'mysql':
+                // https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html
+                $sql .= ' ON DUPLICATE KEY UPDATE ';
+
+                $serverVersion = $this->pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+                $valuesDeprecated = version_compare($serverVersion, '8.0.20', '>=');
+
+                $set = '';
+                foreach ($fields as $field) {
+                    $set .= "$field = ";
+
+                    if ($valuesDeprecated) {
+                        $set .= "new.$field, ";
+                    } else {
+                        $set .= "VALUES($field), ";
+                    }
+                }
+                $sql .= substr($set, 0, -1);
+                break;
+
+            case 'pgsql':
+            case 'sqlite':
+                $keys = '';
+                foreach ($this->upsertKeys as $upsertKey) {
+                    $keys .= $this->quoteField($upsertKey) . ', ';
+                }
+
+                $set = '';
+                foreach ($fields as $field) {
+                    $set .= "$field = excluded.$field, ";
+                }
+
+                $sql .= ' ON CONFLICT (' . substr($keys, 0, -2) . ')';
+                $sql .= ' DO UPDATE SET ' . substr($set, 0, -2);
+                break;
+
+            default:
+                throw new SmolFrameworkException("PDO driver '$driver' doesn't support UPSERT, or the framework hasn't implemented it.");
+        }
+
+        return $sql;
     }
 
     // --------------------------------------------------
@@ -350,18 +432,21 @@ final class QueryBuilder
 
     private string $table = '';
 
-    public function fromTable(string $tableName): self
+    public function table(string $tableName): self
     {
         $this->table = $this->quoteField($tableName);
 
         return $this;
     }
 
+    public function fromTable(string $tableName): self
+    {
+        return $this->table($tableName);
+    }
+
     public function inTable(string $tableName): self
     {
-        $this->table = $this->quoteField($tableName);
-
-        return $this;
+        return $this->table($tableName);
     }
 
     // --------------------------------------------------
@@ -840,8 +925,12 @@ final class QueryBuilder
             return $this->buildSelectQueryString();
         }
 
-        if ($this->action === self::ACTION_INSERT || $this->action === self::ACTION_INSERT_REPLACE) {
+        if ($this->action === self::ACTION_INSERT) {
             return $this->buildInsertQueryString();
+        }
+
+        if ($this->action === self::ACTION_UPSERT) {
+            return $this->buildUpsertQueryString();
         }
 
         if ($this->action === self::ACTION_UPDATE) {
@@ -851,6 +940,7 @@ final class QueryBuilder
         if ($this->action === self::ACTION_DELETE) {
             return "DELETE FROM $this->table " .
                 $this->buildWhereQueryString() .
+                $this->buildOrderByQueryString() .
                 $this->buildOrderByQueryString() .
                 $this->limit;
         }

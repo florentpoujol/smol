@@ -22,11 +22,11 @@ final class DatabaseCache implements CacheInterface
 
         $this->queryBuilder->reset()
             ->where('key', '=', $this->prefix . $key)
-            ->insertOrReplaceSingle([
+            ->upsertSingle([
                 'key' => $this->prefix . $key,
                 'value' => serialize($value),
                 'expire_at' => date('Y-m-d H:i:s', $expirationTimestamp),
-            ]);
+            ], ['key']);
     }
 
     public function has(string $key): bool

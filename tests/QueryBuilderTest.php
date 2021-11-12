@@ -29,7 +29,8 @@ final class QueryBuilderTest extends TestCase
           `name` TEXT NOT NULL,
           `email` TEXT,
           `created_at` DATETIME
-        )
+        );
+        CREATE UNIQUE INDEX test_name_uindex ON test (name);
         SQL;
 
         $this->pdo->exec($createTable);
@@ -142,6 +143,71 @@ final class QueryBuilderTest extends TestCase
 
         self::assertSame('Florent3', $entries[1]['name']);
         self::assertSame('flo@flo3.fr', $entries[1]['email']);
+    }
+
+    public function test_upsert(): void
+    {
+        // arrange
+        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+
+        // act (insert)
+        $qb = new QueryBuilder($this->pdo);
+        $success = $qb
+            ->inTable('test')
+            ->upsertSingle([
+                'name' => 'Florent',
+                'email' => 'flo@flo.fr',
+                'created_at' => '2021-11-06 21:27:00',
+            ], ['name']);
+
+        // assert
+        self::assertTrue($success);
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+
+        $expected = 'INSERT INTO `test` (`name`, `email`, `created_at`) VALUES (?, ?, ?)';
+        $expected .= ' ON CONFLICT (`name`) DO UPDATE SET `name` = excluded.`name`, `email` = excluded.`email`, `created_at` = excluded.`created_at`';
+        self::assertSame($expected, $qb->toSql());
+        self::assertSame('1', $qb->getPdo()->lastInsertId());
+
+        $statement = $this->pdo->query('SELECT * FROM test');
+        self::assertInstanceOf(PDOStatement::class, $statement);
+        assert($statement instanceof PDOStatement); // for PHPStan
+
+        $entry = $statement->fetch();
+        self::assertSame('1', $entry['id']);
+        self::assertSame('Florent', $entry['name']);
+        self::assertSame('flo@flo.fr', $entry['email']);
+        self::assertSame('2021-11-06 21:27:00', $entry['created_at']);
+
+        // --------------------------------------------------
+        // act (upsert)
+        $qb = new QueryBuilder($this->pdo);
+        $success = $qb
+            ->inTable('test')
+            ->upsertSingle([
+                'name' => 'Florent',
+                'email' => 'flo@flo.fr',
+                'created_at' => '2021-11-06 21:27:00',
+            ], ['name']);
+
+        // assert
+        self::assertTrue($success);
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+
+        $expected = 'INSERT INTO `test` (`name`, `email`, `created_at`) VALUES (?, ?, ?)';
+        $expected .= ' ON CONFLICT (`name`) DO UPDATE SET `name` = excluded.`name`, `email` = excluded.`email`, `created_at` = excluded.`created_at`';
+        self::assertSame($expected, $qb->toSql());
+        self::assertSame('1', $qb->getPdo()->lastInsertId());
+
+        $statement = $this->pdo->query('SELECT * FROM test');
+        self::assertInstanceOf(PDOStatement::class, $statement);
+        assert($statement instanceof PDOStatement); // for PHPStan
+
+        $entry = $statement->fetch();
+        self::assertSame('1', $entry['id']);
+        self::assertSame('Florent', $entry['name']);
+        self::assertSame('flo@flo.fr', $entry['email']);
+        self::assertSame('2021-11-06 21:27:00', $entry['created_at']);
     }
 
     public function test_delete(): void
