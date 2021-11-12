@@ -28,6 +28,11 @@ final class RedisCache implements CacheInterface
         return $this->redis->exists($this->prefix . $key) > 0;
     }
 
+    public function keys(string $prefix = ''): array
+    {
+        return $this->redis->keys($this->prefix . $prefix . '*');
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $value = $this->redis->get($this->prefix . $key);

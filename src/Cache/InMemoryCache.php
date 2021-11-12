@@ -27,6 +27,25 @@ final class InMemoryCache implements CacheInterface
         return $this->get($key) === null;
     }
 
+    public function keys(string $prefix = ''): array
+    {
+        if ($prefix === '') {
+            return array_keys($this->items);
+        }
+
+        $keys = [];
+        $prefix = $this->prefix . $prefix;
+        $currentTimestamp = time();
+
+        foreach ($this->items as $key => $item) {
+            if ($item->expirationTimestamp >= $currentTimestamp && str_starts_with($key, $prefix)) {
+                $keys[] = $key;
+            }
+        }
+
+        return $keys;
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $key = $this->prefix . $key;

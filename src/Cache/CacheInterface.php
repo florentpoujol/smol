@@ -10,6 +10,11 @@ interface CacheInterface
 
     public function has(string $key): bool;
 
+    /**
+     * @return array<string>
+     */
+    public function keys(string $prefix = ''): array;
+
     public function get(string $key, mixed $default = null): mixed;
 
     public function delete(string $key): void;

@@ -36,6 +36,17 @@ final class DatabaseCache implements CacheInterface
             ->exists();
     }
 
+    public function keys(string $prefix = ''): array
+    {
+        return array_column(
+            $this->queryBuilder->reset()
+                ->where('key', 'LIKE', $this->prefix . $prefix . '%')
+                ->where('expire_at', '>=', date('Y-m-d H:i:s'))
+                ->selectMany(['key']),
+            'key'
+        );
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         $key = $this->prefix . $key;
