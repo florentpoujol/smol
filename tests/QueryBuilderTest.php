@@ -309,6 +309,38 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $qb->toSql());
     }
 
+    public function test_exists(): void
+    {
+        // arrange
+        $qb = $this->seedForSelect();
+
+        // act
+        $exists = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'stuff')
+            ->exists();
+
+        // assert
+        $expected = 'SELECT EXISTS(SELECT 1 FROM `test` WHERE `name` = ? )';
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertFalse($exists);
+
+        // act
+        $exists = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'Florent1')
+            ->exists();
+
+        // assert
+        $expected = 'SELECT EXISTS(SELECT 1 FROM `test` WHERE `name` = ? )';
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertTrue($exists);
+    }
+
     public function test_join(): void
     {
         // arrange

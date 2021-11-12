@@ -61,6 +61,7 @@ final class QueryBuilder
     public const ACTION_UPDATE = 'UPDATE';
     public const ACTION_DELETE = 'DELETE';
     public const ACTION_SELECT = 'SElECT';
+    public const ACTION_EXISTS = 'EXISTS';
 
     private string $action = self::ACTION_SELECT;
 
@@ -197,10 +198,38 @@ final class QueryBuilder
         return $query;
     }
 
+    private function buildExistsQueryString(): string
+    {
+        $query = "SELECT EXISTS(SELECT 1 FROM $this->table ";
+        $query .= $this->buildJoinQueryString();
+        $query .= $this->buildWhereQueryString();
+        $query .= $this->buildGroupByQueryString();
+        $query .= $this->buildHavingQueryString();
+        $query .= $this->buildOrderByQueryString();
+        $query .= $this->limit;
+        $query .= $this->offset;
+        $query .= ')';
+
+        return $query;
+    }
+
     public function count(): int
     {
         // calling selectMany() here since selectSingle() add a LIMIT clause
         return $this->selectMany('COUNT(*) AS _count')[0]['_count'] ?? 0; // @phpstan-ignore-line
+    }
+
+    public function exists(): bool
+    {
+        $this->action = self::ACTION_EXISTS;
+
+        $statement = $this->pdo->prepare($this->toSql());
+        $statement->execute(array_merge(
+            $this->whereBindings,
+            $this->havingBindings
+        ));
+
+        return (bool) $statement->fetchColumn(); // the column '0' return either '0' or '1'
     }
 
     // --------------------------------------------------
@@ -803,6 +832,10 @@ final class QueryBuilder
 
     public function toSql(): string
     {
+        if ($this->action === self::ACTION_EXISTS) {
+            return $this->buildExistsQueryString();
+        }
+
         if ($this->action === self::ACTION_SELECT) {
             return $this->buildSelectQueryString();
         }
