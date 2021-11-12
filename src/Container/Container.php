@@ -21,12 +21,15 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 
 /**
- * @template ServiceType
+ * @template ServiceType of object
  */
 final class Container implements ContainerInterface
 {
-    /** @var array<class-string<ServiceType>, callable|string|array> */
-    private array $factories = [
+    /** @var array<class-string<ServiceType>, callable|string> */
+    private array $bindings = [];
+
+    /** @var array<class-string<ServiceType>, callable|string> */
+    private array $singletonBindings = [
         ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
         ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
         RequestHandlerInterface::class => Psr15RequestHandler::class,
@@ -41,7 +44,7 @@ final class Container implements ContainerInterface
      * Values cached by get().
      * Typically, object instances but may be any values returned by closures or found in services.
      *
-     * @var array<class-string<ServiceType>, null|object<ServiceType>
+     * @var array<class-string<ServiceType>, object<ServiceType>
      */
     private array $instances = [];
 
@@ -50,21 +53,9 @@ final class Container implements ContainerInterface
      */
     private array $parameters = [];
 
-    /**
-     * @param array<class-string, callable|string|array> $factories
-     * @param array<string, mixed>                       $parameters
-     */
-    public function __construct(array $factories = null, array $parameters = null)
+    public function __construct()
     {
         $this->instances[ContainerInterface::class] = $this;
-
-        if ($factories !== null) {
-            $this->factories = $factories;
-        }
-
-        if ($parameters !== null) {
-            $this->parameters = $parameters;
-        }
     }
 
     public function setParameter(string $name, mixed $value): void
@@ -78,21 +69,25 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string<ServiceType>                        $serviceName
-     * @param callable|string|array<string|object|int, string> $factory     Instance factory, service alias, or constructor arguments
+     * @param class-string<ServiceType> $abstract
+     * @param callable|class-string     $concreteOrFactory
      */
-    public function setFactory(string $serviceName, callable|string|array $factory): void
+    public function bind(string $abstract, callable|string $concreteOrFactory, bool $isSingleton = true): void
     {
-        $this->factories[$serviceName] = $factory;
+        if ($isSingleton) {
+            $this->singletonBindings[$abstract] = $concreteOrFactory;
+        } else {
+            $this->bindings[$abstract] = $concreteOrFactory;
+        }
     }
 
     /**
-     * @param class-string<ServiceType> $serviceName
+     * @param class-string<ServiceType> $abstract
      * @param ServiceType               $instance
      */
-    public function setInstance(string $serviceName, object $instance): void
+    public function setInstance(string $abstract, object $instance): void
     {
-        $this->instances[$serviceName] = $instance;
+        $this->instances[$abstract] = $instance;
     }
 
     /**
@@ -100,13 +95,16 @@ final class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return isset($this->instances[$id]) || isset($this->factories[$id]);
+        return
+               isset($this->instances[$id])
+            || isset($this->singletonBindings[$id])
+            || isset($this->bindings[$id]);
     }
 
     /**
      * @param class-string<ServiceType> $id
      *
-     * @return ServiceType
+     * @return object<ServiceType>
      */
     public function get(string $id): object
     {
@@ -114,14 +112,17 @@ final class Container implements ContainerInterface
             return $this->instances[$id];
         }
 
-        $value = $this->make($id);
-        $this->instances[$id] = $value;
-
-        if ($value === null) {
+        $concrete = $this->make($id);
+        if ($concrete === null) {
             throw new NotFoundException("'$id' couldn't be resolved");
         }
 
-        return $value;
+        if (isset($this->singletonBindings[$id])) {
+            $this->instances[$id] = $concrete;
+            $this->instances[get_class($concrete)] = $concrete;
+        }
+
+        return $concrete;
     }
 
     /**
@@ -129,88 +130,65 @@ final class Container implements ContainerInterface
      *
      * @param array<string, mixed> $extraArguments
      *
+     * @return null|object<ServiceType>
+     *
      * @throws \FlorentPoujol\SmolFramework\Container\NotFoundException when a service name couldn't be resolved
      */
-    public function make(string $serviceName, array $extraArguments = []): ?object
+    public function make(string $abstract, array $extraArguments = []): ?object
     {
-        if (! isset($this->factories[$serviceName])) {
-            if (class_exists($serviceName)) {
-                return $this->createObject($serviceName, $extraArguments);
+        if (! isset($this->singletonBindings[$abstract], $this->bindings[$abstract])) {
+            if (class_exists($abstract)) {
+                return $this->createObject($abstract, $extraArguments);
             }
 
-            throw new ContainerException("Factory for service '$serviceName' not found.");
+            throw new NotFoundException("Factory or concrete class FQCN for abstract '$abstract' not found.");
         }
 
-        $value = $this->factories[$serviceName];
+        $bindings = array_merge($this->singletonBindings, $this->bindings);
 
-        // check if is a callable first, because callables can be string or array, too
+        $value = $bindings[$abstract];
+
         if (is_callable($value)) {
             return $value($this, $extraArguments);
         }
 
-        if (is_array($value)) {
-            // $serviceName is a concrete class name, $value is class constructor description
-            return $this->createObject($serviceName, array_merge($value, $extraArguments)); // @phpstan-ignore-line
-        }
-
-        // typically, $serviceName is an interface or alias to other service
+        // $value is a concrete class, which may also be and alias to other service
 
         // resolve alias as deep as possible
-        $valueChanged = false;
-        while (isset($this->factories[$value])) {
-            $value = $this->factories[$value];
+        while (isset($bindings[$value])) {
+            $value = $bindings[$value];
 
-            if (! is_string($value)) {
-                throw new ContainerException();
+            if (is_callable($value)) {
+                return $value($this, $extraArguments);
             }
-            $valueChanged = true;
-        }
-
-        if ($valueChanged) {
-            return $this->make($value, $extraArguments);
         }
 
         if (class_exists($value)) {
             return $this->createObject($value, $extraArguments);
         }
 
-        throw new ContainerException("Service '$serviceName' resolve to a string value '$value' that is neither another known service nor a class name.");
+        throw new NotFoundException("Service '$abstract' resolve to a string value '$value' that is neither another known service nor a class name.");
     }
 
     /**
-     * @param class-string         $classFqcn
+     * @param class-string<ServiceType>         $classFqcn
      * @param array<string, mixed> $extraArguments
      *
-     * @throws \Exception
+     * @return object<ServiceType>
      */
     private function createObject(string $classFqcn, array $extraArguments = []): ?object
     {
-        $class = new \ReflectionClass($classFqcn);
-        $constructor = $class->getConstructor();
+        $reflectionClass = new \ReflectionClass($classFqcn);
+        $reflectionConstructor = $reflectionClass->getConstructor();
 
-        if ($constructor === null) {
+        if ($reflectionConstructor === null) {
             return new $classFqcn();
         }
 
         $args = [];
-        $params = $constructor->getParameters();
-        foreach ($params as $param) {
-            $paramName = $param->getName();
-            $isParamMandatory = ! $param->isOptional();
-
-            $typeName = '';
-            $typeIsBuiltin = false;
-            $typeIsNullable = false;
-            $type = $param->getType();
-
-            if ($type instanceof ReflectionUnionType) {
-                throw new ContainerException("Can't autowire argument '$paramName' of service '$classFqcn' because it has union type.");
-            }
-            if ($type instanceof ReflectionNamedType) {
-                $typeName = $type->getName();
-                $typeIsBuiltin = $type->isBuiltin();
-                $typeIsNullable = $type->allowsNull();
-            } // else is null (no type specified)
+        $reflectionParameters = $reflectionConstructor->getParameters();
+        foreach ($reflectionParameters as $reflectionParameter) {
+            $paramName = $reflectionParameter->getName();
 
             if (isset($extraArguments[$paramName])) {
                 $value = $extraArguments[$paramName];
@@ -223,39 +201,75 @@ final class Container implements ContainerInterface
                     }
                 }
 
-                $args[] = $value;
+                $args[$paramName] = $value;
 
                 continue;
             }
 
-            if ($typeName === '' || $typeIsBuiltin) {
+            $paramIsMandatory = ! $reflectionParameter->isOptional();
+
+            $typeName = null;
+            $typeIsBuiltin = false;
+            $typeIsNullable = false;
+            $reflectionType = $reflectionParameter->getType();
+
+            if ($reflectionType instanceof ReflectionUnionType) {
+                throw new ContainerException("Can't autowire argument '$paramName' of service '$classFqcn' because it has union type.");
+            }
+
+            if ($reflectionType instanceof ReflectionNamedType) {
+                $typeName = $reflectionType->getName();
+                $typeIsBuiltin = $reflectionType->isBuiltin();
+                $typeIsNullable = $reflectionType->allowsNull();
+            } // else $reflectionType === null (no type specified)
+
+            if ($typeName === null || $typeIsBuiltin) {
                 // no type hint or not an object, so try to get a value from the parameters
+                $hasParameter = isset($this->parameters[$paramName]);
                 $value = $this->parameters[$paramName] ?? null;
 
-                if ($value === null && ! $typeIsNullable && $isParamMandatory) {
-                    throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in" . " type '$typeName' but value is not manually specified in the container or the extra arguments.");
+                if ($hasParameter && $value === null && ! $typeIsNullable) {
+                    throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' is not nullable but a null value was specified through parameters");
                 }
 
-                $args[] = $value;
+                if (! $hasParameter && $paramIsMandatory) {
+                    $message = "Constructor argument '$paramName' for class '$classFqcn' has no type-hint or is of built-in" .
+                        " type '$typeName' but value is not manually specified in the container or the extra arguments.";
+
+                    throw new ContainerException($message);
+                }
+
+                if (! $hasParameter) {
+                    // because of the condition above, we know the param is always optional here
+                    continue;
+                }
+
+                $args[$paramName] = $value;
 
                 continue;
             }
 
             // param is a class or interface (internal or userland)
             if (interface_exists($typeName) && ! $this->has($typeName)) {
-                throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface " . "'$typeName' but no alias for it is set in the container.");
+                $msg = "Constructor argument '$paramName' for class '$classFqcn' is type-hinted with the interface " .
+                    "'$typeName' but no alias for it is set in the container.";
+
+                throw new ContainerException($msg);
             }
 
             $instance = null;
-            if ($isParamMandatory) {
+            if ($paramIsMandatory) {
                 try {
                     $instance = $this->get($typeName);
                 } catch (ContainerException $exception) {
-                    throw new ContainerException("Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' " . " but the container don't know how to resolve it.");
+                    $msg = "Constructor argument '$paramName' for class '$classFqcn' has type '$typeName' " .
+                        " but the container don't know how to resolve it.";
+
+                    throw new ContainerException($msg);
                 }
             }
 
-            $args[] = $instance;
+            $args[$paramName] = $instance;
         }
 
         return new $classFqcn(...$args);
