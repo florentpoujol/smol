@@ -92,8 +92,6 @@ final class Framework
 
     public function handleHttpRequest(): void
     {
-        $this->boot();
-
         try {
             /** @var \FlorentPoujol\SmolFramework\Router $router */
             $router = $this->container->get(Router::class);
@@ -121,11 +119,16 @@ final class Framework
                 $this->handleRequestThroughPsr15Middleware(); // app exit here
             }
 
-            $this->sendRequestThroughMiddleware($route); // app *may* exit here
+            $hasMiddleware = $route->getMiddleware() !== [];
+            if ($hasMiddleware) {
+                $this->sendRequestThroughMiddleware($route); // app *may* exit here
+            }
 
             $response = $this->callRouteAction($route);
 
-            $response = $this->sendResponseThroughMiddleware($response, $route);
+            if ($hasMiddleware) {
+                $response = $this->sendResponseThroughMiddleware($response, $route);
+            }
         } catch (\Throwable $exception) {
             /** @var \FlorentPoujol\SmolFramework\ExceptionHandler $exceptionHandler */
             $exceptionHandler = $this->container->get(ExceptionHandler::class);
@@ -159,30 +162,41 @@ final class Framework
      */
     private function sendRequestThroughMiddleware(Route $route): void
     {
-        $middleware = $route->getMiddleware();
-        if ($middleware === []) {
-            return;
-        }
-
         $this->responseMiddleware = [];
         $serverRequest = $this->container->get(ServerRequestInterface::class);
 
-        foreach ($middleware as $_middleware) {
-            if (! is_callable($_middleware)) {
-                // "Controller@method"
-                [$fqcn, $method] = explode('@', $_middleware, 2);
-                $_middleware = [$this->container->get($fqcn), $method];
-                assert(is_callable($_middleware));
+        foreach ($route->getMiddleware() as $requestMiddleware) {
+            $responseMiddleware = null;
+
+            if (! is_callable($requestMiddleware)) {
+                $instance = $this->container->get($requestMiddleware);
+
+                $responseMiddleware = [$instance, 'handleResponse'];
+                if (! is_callable($responseMiddleware)) {
+                    $responseMiddleware = null;
+                }
+
+                $requestMiddleware = [$instance, 'handleRequest'];
+                if (! is_callable($requestMiddleware)) {
+                    if ($responseMiddleware !== null) {
+                        $this->responseMiddleware[] = $responseMiddleware;
+                    }
+
+                    continue;
+                }
             }
 
-            $response = $_middleware($serverRequest, $route);
-            $this->responseMiddleware[] = $_middleware;
+            $response = $requestMiddleware($serverRequest, $route);
 
             if ($response !== null) {
-                $response = $this->sendResponseThroughMiddleware($response, $route);
+                if ($this->responseMiddleware !== []) {
+                    $response = $this->sendResponseThroughMiddleware($response, $route);
+                }
 
-                $this->sendResponseToClient($response); // code exit here
+                $this->sendResponseToClient($response); // app exit here
             }
+
+            $this->responseMiddleware[] = $responseMiddleware ?? $requestMiddleware;
         }
     }
 
@@ -191,14 +205,10 @@ final class Framework
 
     private function sendResponseThroughMiddleware(ResponseInterface $response, Route $route): ResponseInterface
     {
-        if ($this->responseMiddleware === []) {
-            return $response;
-        }
-
         $middleware = array_reverse($this->responseMiddleware);
 
-        foreach ($middleware as $_middleware) {
-            $response = $_middleware($response, $route) ?? $response;
+        foreach ($middleware as $responseMiddleware) {
+            $response = $responseMiddleware($response, $route) ?? $response;
         }
 
         return $response;
