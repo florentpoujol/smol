@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Cache;
 
-final class InMemoryCache implements CacheInterface
+final class ArrayCache implements CacheInterface
 {
-    /** @var array<string, CacheItem> Each cache item is the expiration timestamp and the value */
+    /** @var array<string, array{0: int, 1: mixed}> Each cache item is the expiration timestamp and value */
     private array $items = [];
 
     public function __construct(
@@ -18,7 +18,7 @@ final class InMemoryCache implements CacheInterface
     {
         $expirationTimestamp = $ttlInSeconds === null ? PHP_INT_MAX : time() + $ttlInSeconds;
 
-        $this->items[$this->prefix . $key] = new CacheItem($value, $expirationTimestamp);
+        $this->items[$this->prefix . $key] = [$expirationTimestamp, $value];
     }
 
     public function has(string $key): bool
@@ -37,7 +37,7 @@ final class InMemoryCache implements CacheInterface
         $currentTimestamp = time();
 
         foreach ($this->items as $key => $item) {
-            if ($item->expirationTimestamp >= $currentTimestamp && str_starts_with($key, $prefix)) {
+            if ($item[0] >= $currentTimestamp && str_starts_with($key, $prefix)) {
                 $keys[] = $key;
             }
         }
@@ -54,8 +54,8 @@ final class InMemoryCache implements CacheInterface
             return $default;
         }
 
-        if ($item->expirationTimestamp <= time()) {
-            return $item->value;
+        if ($item[0] <= time()) {
+            return $item[1];
         }
 
         unset($this->items[$key]);
@@ -96,7 +96,7 @@ final class InMemoryCache implements CacheInterface
         $count = 0;
 
         foreach ($this->items as $key => $item) {
-            if ($item->expirationTimestamp < $time) { // this assumes we go through all the items in less than 1 second
+            if ($item[0] < $time) { // this assumes we go through all the items in less than 1 second
                 unset($this->items[$key]);
                 ++$count;
             }
