@@ -64,3 +64,30 @@ if (! function_exists('dd')) {
         exit(0);
     }
 }
+
+if (! function_exists('read_environment_file')) {
+    function read_environment_file(
+        string $filePath,
+        string $envVarPattern = '/\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)\n/iU' // eg: SOME_ENV = "a value"
+    ): void {
+        $fileContent = file_get_contents($filePath);
+        assert(is_string($fileContent));
+        $matches = [];
+
+        preg_match_all($envVarPattern, $fileContent, $matches);
+
+        foreach ($matches['key'] as $i => $key) {
+            $value = trim($matches['value'][$i]);
+            if (
+                ($value[0] === '"' && $value[-1] === '"')
+                || ($value[0] === "'" && $value[-1] === "'")
+            ) {
+                // if the value is surrounded by a quotation mark, remove it, but only that one
+                // so that a value like ""test"" become "test"
+                $value = substr($value, 1, -1);
+            }
+
+            putenv("$key=$value");
+        }
+    }
+}

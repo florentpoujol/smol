@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Framework\Translations;
 
-use FlorentPoujol\SmolFramework\Framework\ConfigRepository;
+use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 
 final class TranslationsRepository
 {
