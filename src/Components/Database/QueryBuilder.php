@@ -568,8 +568,8 @@ final class QueryBuilder
 
     /**
      * @return void|never-return
-     * @throws \FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException
      *
+     * @throws \FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException
      */
     private function sanitizeComparisonOperator(string $operator): void
     {

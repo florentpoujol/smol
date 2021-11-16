@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Framework\Http;
 
 use FlorentPoujol\SmolFramework\Framework\Framework;
-use FlorentPoujol\SmolFramework\Framework\Http\Route;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;

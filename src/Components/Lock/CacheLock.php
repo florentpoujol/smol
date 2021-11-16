@@ -9,9 +9,9 @@ use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
 final class CacheLock
 {
     public function __construct(
+        private CacheInterface $cache,
         private string $name,
         private int $ttlInSeconds,
-        private CacheInterface $cache,
     ) {
     }
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Container;
 
+use FlorentPoujol\SmolFramework\Components\Cache\ArrayCache;
 use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
-use FlorentPoujol\SmolFramework\Components\Cache\InMemoryCache;
 use FlorentPoujol\SmolFramework\Components\Log\DailyFileLogger;
 use FlorentPoujol\SmolFramework\Framework\Http\Psr15RequestHandler;
 use Nyholm\Psr7\Request;
@@ -37,7 +37,7 @@ final class Container implements ContainerInterface
         LoggerInterface::class => DailyFileLogger::class,
         PDO::class => [ServiceFactories::class, 'makePdo'],
         Redis::class => [ServiceFactories::class, 'makeRedis'],
-        CacheInterface::class => InMemoryCache::class,
+        CacheInterface::class => ArrayCache::class,
     ];
 
     /**
@@ -171,8 +171,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * @param class-string<ServiceType>         $classFqcn
-     * @param array<string, mixed> $extraArguments
+     * @param class-string<ServiceType> $classFqcn
+     * @param array<string, mixed>      $extraArguments
      *
      * @return object<ServiceType>
      */

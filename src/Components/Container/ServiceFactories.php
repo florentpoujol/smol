@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Container;
 
-use FlorentPoujol\SmolFramework\Framework\ConfigRepository;
+use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 use FlorentPoujol\SmolFramework\Framework\Http\ServerRequest;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;

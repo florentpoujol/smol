@@ -40,9 +40,9 @@
         "symfony/var-dumper": "^5.3"
     },
     "scripts": {
-        "phpstan": "phpstan analyse -c phpstan.neon",
-        "cs-fix": "php-cs-fixer fix",
-        "cs-check": "php-cs-fixer fix -v --dry-run --diff"
+        "phpstan": "vendor/bin/phpstan analyse -c phpstan.neon",
+        "cs-fix": "vendor/bin/php-cs-fixer fix",
+        "cs-check": "vendor/bin/php-cs-fixer fix -v --dry-run --diff"
     },
     "config": {
         "preferred-install": "dist",
