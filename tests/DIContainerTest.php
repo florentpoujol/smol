@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SmolFramework\Container\Container;
+use FlorentPoujol\SmolFramework\Components\Container\Container;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SmolFramework\ConfigRepository;
+use FlorentPoujol\SmolFramework\Framework\ConfigRepository;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigRepositoryTest extends TestCase

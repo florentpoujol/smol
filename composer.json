@@ -4,21 +4,23 @@
     "type": "project",
     "description": "A lean but full-featured framework for PHP 8.0+",
     "autoload": {
-        "files": ["src/helpers.php"],
+        "files": [
+            "src/Framework/helpers.php"
+        ],
         "psr-4" : {
             "FlorentPoujol\\SmolFramework\\" : "src/"
         }
     },
     "autoload-dev": {
-        "files": ["src/helpers.php"],
+        "files": [
+            "src/Framework/helpers.php"
+        ],
         "psr-4" : {
             "Tests\\FlorentPoujol\\SmolFramework\\" : "tests/"
         }
     },
     "require": {
         "php": "^8.0",
-        "ext-pdo": "*",
-        "ext-curl": "*",
         "nyholm/psr7": "^1.4",
         "nyholm/psr7-server": "^1.0",
         "psr/container": "^1.1",

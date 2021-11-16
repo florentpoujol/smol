@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SmolFramework\Route;
+use FlorentPoujol\SmolFramework\Framework\Http\Route;
 use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware1;
 use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware2;
 

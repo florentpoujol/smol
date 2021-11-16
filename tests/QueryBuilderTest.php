@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\FlorentPoujol\SmolFramework;
 
 use DateTime;
-use FlorentPoujol\SmolFramework\Database\QueryBuilder;
+use FlorentPoujol\SmolFramework\Components\Database\QueryBuilder;
 use PDO;
 use PDOException;
 use PDOStatement;

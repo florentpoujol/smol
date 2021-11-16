@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
-use FlorentPoujol\SmolFramework\ViewRenderer;
+use FlorentPoujol\SmolFramework\Components\ViewRenderer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
