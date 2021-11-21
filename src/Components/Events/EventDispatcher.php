@@ -145,7 +145,7 @@ final class EventDispatcher
             foreach ($listeners as $listener) {
                 if (is_string($listener) && str_contains($listener, '@')) {
                     [$fqcn, $method] = explode('@', $listener, 2);
-                    $listener = [$this->container->get($fqcn), $method];
+                    $listener = [$this->container->get($fqcn), $method]; // @phpstan-ignore-line
                 }
 
                 $stopPropagation = $listener($event, $data); // @phpstan-ignore-line

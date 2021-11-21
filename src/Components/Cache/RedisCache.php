@@ -37,7 +37,7 @@ final class RedisCache implements CacheInterface
     {
         if ($ttlInSeconds !== null && ! $this->has($key)) {
             $initialValue += $offset;
-            $this->redis->setEx($this->prefix . $key, $ttlInSeconds, $initialValue);
+            $this->redis->setEx($this->prefix . $key, $ttlInSeconds, (string) $initialValue);
 
             return $initialValue;
         }

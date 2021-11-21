@@ -6,6 +6,7 @@ namespace Tests\FlorentPoujol\SmolFramework;
 
 use FlorentPoujol\SmolFramework\Components\Validation\Validator;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use stdClass;
 
 final class ValidatorTest extends TestCase
@@ -49,7 +50,7 @@ final class ValidatorTest extends TestCase
 
         self::assertSame('publicProperty', $object->publicProperty);
         self::assertSame('publicStaticProperty', $object::$publicStaticProperty);
-        self::assertSame('publicDynamicProperty', $object->publicDynamicProperty);
+        self::assertSame('publicDynamicProperty', $object->publicDynamicProperty); // @phpstan-ignore-line
 
         $validator = (new Validator())
             ->setData($object)
@@ -199,21 +200,24 @@ class TestEntityToValidate
     protected static string $protectedStaticProperty = '';
     private static string $privateStaticProperty = '';
 
+    /**
+     * @param array<string, string> $data
+     */
     public function setProperties(array $data): void
     {
         foreach ($data as $key => $value) {
             if (str_contains($key, 'Dynamic')) {
-                $this->{$key} = $value;
+                $this->{$key} = $value; // @phpstan-ignore-line
 
                 continue;
             }
 
-            $reflectionProperty = new \ReflectionProperty(self::class, $key);
+            $reflectionProperty = new ReflectionProperty(self::class, $key);
             if ($reflectionProperty->isStatic()) {
                 $reflectionProperty->setAccessible(true);
                 $reflectionProperty->setValue($value);
             } else {
-                $this->{$key} = $value;
+                $this->{$key} = $value; // @phpstan-ignore-line
             }
         }
     }

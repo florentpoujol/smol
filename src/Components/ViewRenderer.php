@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components;
 
+use FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException;
+
 final class ViewRenderer
 {
     public function __construct(

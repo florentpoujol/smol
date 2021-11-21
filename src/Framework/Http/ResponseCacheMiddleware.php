@@ -25,7 +25,7 @@ final class ResponseCacheMiddleware
 
         $this->cacheKey = 'responses:' . md5(
             $request->getMethod() .
-            $request->getHeader('host') .
+            ($request->getHeader('host')[0] ?? '') .
             $request->getUri() .
             implode('', $request->getQueryParams())
         );

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Validation;
 
-use ArrayAccess;
 use ReflectionProperty;
 
 final class Validator
 {
-    /** @var array<string, mixed>|object an assoc array, or an object */
-    private array|object $data;
-    private bool $dataIsArrayLike;
+    /** @var null|array<string, mixed> */
+    private ?array $arrayData = null;
+
+    private ?object $objectData = null;
 
     /** @var array<string, array<string|callable|RuleInterface>> */
     private array $rules;
@@ -25,10 +25,21 @@ final class Validator
      */
     public function setData(array|object $data): self
     {
-        $this->data = $data;
-        $this->dataIsArrayLike = is_array($data) || $data instanceof ArrayAccess;
+        if (is_array($data)) {
+            $this->arrayData = $data;
+        } else {
+            $this->objectData = $data;
+        }
 
         return $this;
+    }
+
+    /**
+     * @return array<string, mixed>|object
+     */
+    public function getData(): array|object
+    {
+        return $this->arrayData ?? $this->objectData; // @phpstan-ignore-line
     }
 
     /**
@@ -65,7 +76,7 @@ final class Validator
             return;
         }
 
-        throw new ValidationException($this->data, $this->messages);
+        throw new ValidationException($this->getData(), $this->messages);
     }
 
     /**
@@ -84,8 +95,12 @@ final class Validator
                     continue;
                 }
 
-                if (is_callable($rule) && ! is_string($rule)) { // prevent 'date' to be considered as a callable
-                    $message = $rule($this->getValue($key), $this->data);
+                if (is_callable($rule)) {
+                    if (is_string($rule)) { // prevent 'date' to be considered as a callable
+                        continue;
+                    }
+
+                    $message = $rule($this->getValue($key), $this->getData());
 
                     if ($message === false) {
                         $this->addMessage($key);
@@ -97,7 +112,7 @@ final class Validator
                 }
 
                 if ($rule instanceof RuleInterface) {
-                    if (! $rule->passes($this->getValue($key), $this->data)) {
+                    if (! $rule->passes($this->getValue($key), $this->getData())) {
                         $this->addMessage($key, $rule->getMessage(), basename(get_class($rule)));
                     }
 
@@ -105,10 +120,10 @@ final class Validator
                 }
 
                 // the rule is a built-in string
-                if ($rule === 'present') {
+                if ($rule === 'exists') {
                     if (
-                        ($this->dataIsArrayLike && ! array_key_exists($key, $this->data)) // @phpstan-ignore-line
-                        || (! $this->dataIsArrayLike && ! property_exists($this->data, $key)) // @phpstan-ignore-line
+                        ($this->arrayData !== null && ! array_key_exists($key, $this->arrayData))
+                        || ($this->objectData !== null && ! property_exists($this->objectData, $key))
                     ) {
                         $this->addMessage($key, null, $rule);
                     }
@@ -127,15 +142,15 @@ final class Validator
 
     private function getValue(string $key): mixed
     {
-        if ($this->dataIsArrayLike) {
-            return $this->data[$key] ?? null; // @phpstan-ignore-line
+        if ($this->arrayData !== null) {
+            return $this->arrayData[$key] ?? null;
         }
 
-        if (property_exists($this->data, $key)) { // @phpstan-ignore-line
-            $reflectionProperty = new ReflectionProperty($this->data, $key);
+        if ($this->objectData !== null && property_exists($this->objectData, $key)) {
+            $reflectionProperty = new ReflectionProperty($this->objectData, $key);
             $reflectionProperty->setAccessible(true);
 
-            return $reflectionProperty->getValue($this->data); // @phpstan-ignore-line
+            return $reflectionProperty->getValue($this->objectData);
         }
 
         return null;
@@ -158,7 +173,7 @@ final class Validator
     {
         $functionName = "is_$rule"; // is_int() for instance
         if (function_exists($functionName)) {
-            return $functionName($value);
+            return $functionName($value); // @phpstan-ignore-line
         }
 
         if (str_contains($rule, ':')) {
@@ -232,6 +247,7 @@ final class Validator
                     return count($value) === (int) $arg;
                 }
 
+                // @phpstan-ignore-next-line
                 return $value === $arg;
 
             case 'equal': return $value == $arg;

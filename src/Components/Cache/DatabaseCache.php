@@ -90,7 +90,7 @@ final class DatabaseCache implements CacheInterface
     {
         $key = $this->prefix . $key;
 
-        /** @var null|array $item */
+        /** @var null|array<string, string> $item */
         $item = $this->queryBuilder->reset()
             ->where('key', '=', $key)
             ->selectSingle();

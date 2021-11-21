@@ -15,5 +15,6 @@ final class ValidationException extends UnexpectedValueException
         /** @var array<string, array<string>> The keys match the one found in the values */
         public array $messages,
     ) {
+        parent::__construct("ValidationException: some data doesn't pass the provided validation rules.");
     }
 }

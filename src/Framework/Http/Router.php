@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Framework\Http;
 
+use FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException;
+
 final class Router
 {
     /** @var array<string, array<string, array<\FlorentPoujol\SmolFramework\Framework\Http\Route>>> Routes instances by HTTP methods and prefixes */

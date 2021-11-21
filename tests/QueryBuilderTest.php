@@ -148,7 +148,7 @@ final class QueryBuilderTest extends TestCase
     public function test_upsert(): void
     {
         // arrange
-        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn()); // @phpstan-ignore-line
 
         // act (insert)
         $qb = new QueryBuilder($this->pdo);
@@ -162,7 +162,7 @@ final class QueryBuilderTest extends TestCase
 
         // assert
         self::assertTrue($success);
-        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn()); // @phpstan-ignore-line
 
         $expected = 'INSERT INTO `test` (`name`, `email`, `created_at`) VALUES (?, ?, ?)';
         $expected .= ' ON CONFLICT (`name`) DO UPDATE SET `name` = excluded.`name`, `email` = excluded.`email`, `created_at` = excluded.`created_at`';
@@ -192,7 +192,7 @@ final class QueryBuilderTest extends TestCase
 
         // assert
         self::assertTrue($success);
-        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn());
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM test')->fetchColumn()); // @phpstan-ignore-line
 
         $expected = 'INSERT INTO `test` (`name`, `email`, `created_at`) VALUES (?, ?, ?)';
         $expected .= ' ON CONFLICT (`name`) DO UPDATE SET `name` = excluded.`name`, `email` = excluded.`email`, `created_at` = excluded.`created_at`';

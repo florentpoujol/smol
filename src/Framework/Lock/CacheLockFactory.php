@@ -17,9 +17,9 @@ final class CacheLockFactory
     public function make(string $name, int $ttlInSeconds): CacheLock
     {
         return new CacheLock(
+            $this->cache,
             $name,
             $ttlInSeconds,
-            $this->cache
         );
     }
 }

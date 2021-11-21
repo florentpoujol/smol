@@ -9,7 +9,9 @@ interface CacheInterface
     public function set(string $key, mixed $value, int $ttlInSeconds = null): void;
 
     public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int;
+
     public function decrement(string $key, int $initialValue = 0, int $ttlInSeconds = null): int;
+
     public function offsetInteger(string $key, int $offset, int $initialValue = 0, ?int $ttlInSeconds = null): int;
 
     public function has(string $key): bool;

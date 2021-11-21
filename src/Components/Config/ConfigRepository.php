@@ -76,7 +76,5 @@ final class ConfigRepository
 
             $this->config[$filename] = require $this->configDirPath . '/' . $path;
         }
-
-        $this->configLoaded = true;
     }
 }

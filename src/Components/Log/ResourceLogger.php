@@ -18,13 +18,14 @@ final class ResourceLogger extends AbstractLogger
      */
     public function __construct(
         private string $resourcePath,
-        private $formatter = [$this, 'defaultLineFormatter']
+        private $formatter = null
     ) {
+        $this->formatter ??= [$this, 'defaultLineFormatter'];
     }
 
     private function openResource(): void
     {
-        $resource = fopen($this->resourcePath, 'a+');
+        $resource = fopen($this->resourcePath, 'a+'); // a+ = reading and writing, pointer at EOF, create file if not exists
         if (! is_resource($resource)) {
             throw new Exception("Can't create resource for path '$this->resourcePath'.");
         }
@@ -32,6 +33,9 @@ final class ResourceLogger extends AbstractLogger
         $this->resource = $resource;
     }
 
+    /**
+     * @param array<mixed> $context
+     */
     private function defaultLineFormatter(string $level, string $message, array $context): string
     {
         $date = date('Y-m-d H:i:s');

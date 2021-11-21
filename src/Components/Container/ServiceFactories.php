@@ -35,7 +35,10 @@ final class ServiceFactories
         return new Response();
     }
 
-    public static function makePdo(Container $container, array $constructorArguments = []): PDO
+    /**
+     * @param array{dsn: string, username: ?string, password: ?string, options: ?array} $constructorArguments
+     */
+    public static function makePdo(Container $container, array $constructorArguments = null): PDO
     {
         $defaultOptions = [
             PDO::ATTR_EMULATE_PREPARES => false,
@@ -43,7 +46,7 @@ final class ServiceFactories
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ];
 
-        if ($constructorArguments === []) {
+        if ($constructorArguments === null) {
             $constructorArguments = $container->get(ConfigRepository::class)->get('app.database', []);
         }
 
@@ -54,11 +57,16 @@ final class ServiceFactories
 
     public static function makeRedis(Container $container): Redis
     {
+        $redisExtVersion = phpversion('redis');
+        if ($redisExtVersion === false) {
+            throw new \Exception("the phpredis exception isn't installed");
+        }
+
         $redis = new Redis();
         /** @var array<string, string> $connectionInfo */
         $connectionInfo = $container->get(ConfigRepository::class)->get('app.phpredis');
 
-        if (version_compare(phpversion('redis'), '5.3.0', '>=')) {
+        if (version_compare($redisExtVersion, '5.3.0', '>=')) {
             if (isset($connectionInfo['auth'])) {
                 $redis->auth($connectionInfo['auth']);
                 unset($connectionInfo['auth']);

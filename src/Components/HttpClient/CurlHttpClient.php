@@ -12,7 +12,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Depends on the Curl exception
+ * Depends on the Curl exception.
  */
 final class CurlHttpClient implements ClientInterface
 {
