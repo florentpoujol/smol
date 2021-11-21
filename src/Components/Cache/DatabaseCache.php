@@ -29,6 +29,45 @@ final class DatabaseCache implements CacheInterface
             ], ['key']);
     }
 
+    public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, 1, $initialValue, $ttlInSeconds);
+    }
+
+    public function decrement(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, -1, $initialValue, $ttlInSeconds);
+    }
+
+    public function offsetInteger(string $key, int $offset, int $initialValue = 0, ?int $ttlInSeconds = null): int
+    {
+        $existingValue = $this->get($key);
+
+        if ($existingValue === null) {
+            $initialValue += $offset;
+            $expirationTimestamp = $ttlInSeconds === null ? 2145913200 : time() + $ttlInSeconds;
+
+            $this->queryBuilder->reset()
+                ->where('key', '=', $this->prefix . $key)
+                ->upsertSingle([
+                    'key' => $this->prefix . $key,
+                    'value' => serialize($initialValue),
+                    'expire_at' => date('Y-m-d H:i:s', $expirationTimestamp),
+                ], ['key']);
+
+            return $initialValue;
+        }
+
+        $existingValue += $offset;
+        $this->queryBuilder->reset()
+            ->where('key', '=', $this->prefix . $key)
+            ->update([
+                'value' => serialize($existingValue),
+            ]);
+
+        return $existingValue;
+    }
+
     public function has(string $key): bool
     {
         return $this->queryBuilder->reset()

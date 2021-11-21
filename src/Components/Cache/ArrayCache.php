@@ -21,6 +21,35 @@ final class ArrayCache implements CacheInterface
         $this->items[$this->prefix . $key] = [$expirationTimestamp, $value];
     }
 
+    public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, 1, $initialValue, $ttlInSeconds);
+    }
+
+    public function decrement(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, -1, $initialValue, $ttlInSeconds);
+    }
+
+    public function offsetInteger(string $key, int $offset, int $initialValue = 0, ?int $ttlInSeconds = null): int
+    {
+        if (! $this->has($key)) {
+            $initialValue += $offset;
+
+            if ($ttlInSeconds === null) {
+                $this->set($key, $initialValue);
+            } else {
+                $this->set($key, $initialValue, $ttlInSeconds);
+            }
+
+            return $initialValue;
+        }
+
+        $this->items[$this->prefix . $key][1] += $offset;
+
+        return $this->items[$this->prefix . $key][1];
+    }
+
     public function has(string $key): bool
     {
         return $this->get($key) === null;

@@ -23,6 +23,32 @@ final class RedisCache implements CacheInterface
         }
     }
 
+    public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, 1, $initialValue, $ttlInSeconds);
+    }
+
+    public function decrement(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, -1, $initialValue, $ttlInSeconds);
+    }
+
+    public function offsetInteger(string $key, int $offset, int $initialValue = 0, ?int $ttlInSeconds = null): int
+    {
+        if ($ttlInSeconds !== null && ! $this->has($key)) {
+            $initialValue += $offset;
+            $this->redis->setEx($this->prefix . $key, $ttlInSeconds, $initialValue);
+
+            return $initialValue;
+        }
+
+        if ($offset > 0) {
+            return $this->redis->incrBy($this->prefix . $key, $offset);
+        }
+
+        return $this->redis->decrBy($this->prefix . $key, $offset);
+    }
+
     public function has(string $key): bool
     {
         return $this->redis->exists($this->prefix . $key) > 0;
@@ -40,7 +66,11 @@ final class RedisCache implements CacheInterface
             return $default;
         }
 
-        return unserialize($value);
+        try {
+            return unserialize($value);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     public function delete(string $key): void

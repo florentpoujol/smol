@@ -23,6 +23,25 @@ final class MemcachedCache implements CacheInterface
         }
     }
 
+    public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, 1, $initialValue, $ttlInSeconds);
+    }
+
+    public function decrement(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
+    {
+        return $this->offsetInteger($key, -1, $initialValue, $ttlInSeconds);
+    }
+
+    public function offsetInteger(string $key, int $offset, int $initialValue = 0, ?int $ttlInSeconds = null): int
+    {
+        if ($offset > 0) {
+            return (int) $this->memcached->increment($this->prefix . $key, $offset, $initialValue, $ttlInSeconds ?? 0);
+        }
+
+        return (int) $this->memcached->decrement($this->prefix . $key, $offset, $initialValue, $ttlInSeconds ?? 0);
+    }
+
     public function has(string $key): bool
     {
         return $this->memcached->get($this->prefix . $key) !== false;
