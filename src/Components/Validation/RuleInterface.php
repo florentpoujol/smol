@@ -6,10 +6,7 @@ namespace FlorentPoujol\SmolFramework\Components\Validation;
 
 interface RuleInterface
 {
-    /**
-     * @param array<string, mixed>|object $data an assoc array, or an object
-     */
-    public function passes(mixed $value, array|object $data): bool;
+    public function passes(string $key, mixed $value): bool;
 
-    public function getMessage(): ?string;
+    public function getMessage(string $key): ?string;
 }

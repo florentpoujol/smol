@@ -100,7 +100,7 @@ final class Validator
                         continue;
                     }
 
-                    $message = $rule($this->getValue($key), $this->getData());
+                    $message = $rule($key, $this->getValue($key));
 
                     if ($message === false) {
                         $this->addMessage($key);
@@ -112,8 +112,8 @@ final class Validator
                 }
 
                 if ($rule instanceof RuleInterface) {
-                    if (! $rule->passes($this->getValue($key), $this->getData())) {
-                        $this->addMessage($key, $rule->getMessage(), basename(get_class($rule)));
+                    if (! $rule->passes($key, $this->getValue($key))) {
+                        $this->addMessage($key, $rule->getMessage($key), basename(get_class($rule)));
                     }
 
                     continue;
@@ -128,7 +128,7 @@ final class Validator
                         $this->addMessage($key, null, $rule);
                     }
 
-                    continue;
+                    break; // do not check more rules for that key, but move on with the remaining keys
                 }
 
                 if (! $this->passeBuiltInRule($this->getValue($key), $rule)) {
