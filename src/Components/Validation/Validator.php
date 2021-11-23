@@ -199,6 +199,12 @@ final class Validator
     {
         [$rule, $arg] = explode(':', $rule, 2);
 
+        $args = [$arg];
+        if (str_contains(',', $arg)) {
+            $args = explode(',', $arg);
+            assert(is_array($args));
+        }
+
         $strlen = function_exists('mb_strlen') ? 'mb_strlen' : 'strlen';
 
         switch ($rule) {
@@ -252,6 +258,7 @@ final class Validator
 
             case 'equal': return $value == $arg;
             case 'same': return $value === $arg;
+            case 'in': return in_array((string) $value, $args, true);
         }
 
         throw new \Exception("Unknown rule '$rule'.");
