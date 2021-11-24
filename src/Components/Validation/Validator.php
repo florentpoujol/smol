@@ -65,7 +65,7 @@ final class Validator
     }
 
     /**
-     * @throws ValidationException
+     * @throws ValidationException if some data isn't valid
      */
     public function throwIfNotValid(): self
     {
@@ -88,11 +88,44 @@ final class Validator
         return $this->messages;
     }
 
+    /**
+     * @return array<string, mixed>|stdClass
+     *
+     * @throws ValidationException if some data isn't valid
+     */
+    public function getValidatedData(): array|stdClass
+    {
+        $this->throwIfNotValid();
+
+        if ($this->arrayData !== null) {
+            return array_intersect_key($this->arrayData, $this->rules);
+        }
+
+        if ($this->objectData instanceof stdClass) {
+            $validated = new stdClass();
+
+            $validatedProperties = array_keys($this->rules);
+            foreach ((array) $this->objectData as $property => $value) {
+                if (in_array($property, $validatedProperties, true)) {
+                    $validated->{$property} = $value;
+                }
+            }
+
+            return $validated;
+        }
+
+        throw new UnexpectedValueException('Can not ');
+    }
+
     private function validate(): void
     {
         foreach ($this->rules as $key => $rules) {
             foreach ($rules as $rule) {
                 if ($rule === 'optional') {
+                    if ($this->getValue($key) === null) {
+                        break; // do not evaluate further rules for that key/property
+                    }
+
                     continue;
                 }
 
@@ -183,7 +216,7 @@ final class Validator
         }
 
         switch ($rule) {
-            case 'notnull': return $value !== null;
+            case 'not-null': return $value !== null;
             case 'uuid': return preg_match('/^[0-9a-fA-F]{8}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{12}$/i', $value) === 1;
             case 'email':
                 return preg_match(
@@ -204,7 +237,7 @@ final class Validator
         $args = [$arg];
         if (str_contains(',', $arg)) {
             $args = explode(',', $arg);
-            assert(is_array($args));
+            assert(is_array($args)); // @phpstan-ignore-line
         }
 
         switch ($rule) {
@@ -214,7 +247,7 @@ final class Validator
             case '>': return $value > $arg;
             case '<=': return $value <= $arg;
             case '<':  return $value < $arg;
-            case 'minlength':
+            case 'min-length':
                 if (is_string($value)) {
                     return strlen($value) >= (int) $arg;
                 }
@@ -223,7 +256,7 @@ final class Validator
                     return count($value) >= (int) $arg;
                 }
                 break;
-            case 'maxlength':
+            case 'max-length':
                 if (is_string($value)) {
                     return strlen($value) <= (int) $arg;
                 }
@@ -244,6 +277,7 @@ final class Validator
             case '==': return $value == $arg;
             case '===': return $value === $arg;
             case 'in': return in_array((string) $value, $args, true);
+            case 'same-as': return $value === $this->getValue($arg);
         }
 
         throw new Exception("Unknown rule '$rule'.");

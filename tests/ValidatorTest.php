@@ -24,7 +24,7 @@ final class ValidatorTest extends TestCase
             ])
             ->setRules([
                 'string' => ['optional', 'string', 'length:10'],
-                'int' => ['notnull', 'int', '>:122'],
+                'int' => ['not-null', 'int', '>:122'],
                 'stdClass' => ['exists', 'instanceof:stdClass'],
                 'date' => ['date'],
                 'array' => ['array', 'length:3'],
@@ -129,6 +129,9 @@ final class ValidatorTest extends TestCase
 
                 '==' => 12,
                 '===' => '12',
+
+                'same-as' => '123.abcd',
+                'same-as2' => 12,
             ])
             ->setRules([
                 'instanceof' => ['instanceof:' . Validator::class],
@@ -139,15 +142,18 @@ final class ValidatorTest extends TestCase
                 '<=' => ['<=:12'],
                 '<' => ['<:13'],
 
-                'minlength_string' => ['minlength:2'],
-                'minlength_countable' => ['minlength:2'],
-                'maxlength_string' => ['maxlength:2'],
-                'maxlength_countable' => ['maxlength:2'],
+                'minlength_string' => ['min-length:2'],
+                'minlength_countable' => ['min-length:2'],
+                'maxlength_string' => ['max-length:2'],
+                'maxlength_countable' => ['max-length:2'],
                 'length_string' => ['length:2'],
                 'length_countable' => ['length:2'],
 
                 '==' => ['==:12'],
                 '===' => ['===:12'],
+
+                'same-as' => ['same-as:regex'],
+                'same-as2' => ['same-as:=='],
             ]);
 
         $isValid = $validator->isValid();
@@ -168,7 +174,8 @@ final class ValidatorTest extends TestCase
                 'datetime' => '1970-01-01 00:00:00',
             ])
             ->setRules([
-                'string' => ['notnull'],
+                'optional' => ['optional', 'exists'],
+                'string' => ['not-null'],
                 'uuid' => ['uuid'],
                 'uuid2' => ['uuid'],
                 'email' => ['email'],
@@ -181,16 +188,66 @@ final class ValidatorTest extends TestCase
         self::assertSame([], $validator->getMessages());
         self::assertTrue($isValid);
     }
+
+    public function test_get_validated_array(): void
+    {
+        $validatedData = (new Validator())
+            ->setData([
+                'string' => '123',
+                'uuid' => '0e9cb36e-a905-4f42-bbbe-9936353734d2',
+                'uuid2' => '0e9cb36ea9054f42bbbe9936353734d2',
+                'email' => 'some.e+mail@site.ab.cd',
+                'date' => '1970-01-01',
+                'datetime' => '1970-01-01 00:00:00',
+                'some value',
+            ])
+            ->setRules([
+                'uuid2' => ['uuid'],
+                'email' => ['email'],
+            ])
+            ->getValidatedData();
+
+        $expected = [
+            'uuid2' => '0e9cb36ea9054f42bbbe9936353734d2',
+            'email' => 'some.e+mail@site.ab.cd',
+        ];
+        self::assertSame($expected, $validatedData);
+    }
+
+    public function test_get_validated_stdclass(): void
+    {
+        $initialData = new stdClass();
+        $initialData->uuid2 = '0e9cb36ea9054f42bbbe9936353734d2';
+        $initialData->email = 'some.e+mail@site.ab.cd';
+        $initialData->date = '1970-01-01';
+        $initialData->datetime = '1970-01-01 00:00:00';
+
+        $validatedData = (new Validator())
+            ->setData($initialData)
+            ->setRules([
+                'email' => ['email'],
+                'date' => ['date'],
+            ])
+            ->getValidatedData();
+
+        $expected = new stdClass();
+        $expected->email = 'some.e+mail@site.ab.cd';
+        $expected->date = '1970-01-01';
+
+        self::assertSame((array) $expected, (array) $validatedData);
+        self::assertNotSame($initialData, $validatedData);
+        self::assertNotSame($expected, $validatedData);
+    }
 }
 
 final class TestEntityToValidate
 {
     public string $publicProperty = '';
-    protected string $protectedProperty = '';
+    private string $protectedProperty = '';
     private string $privateProperty = '';
 
     public static string $publicStaticProperty = '';
-    protected static string $protectedStaticProperty = '';
+    private static string $protectedStaticProperty = '';
     private static string $privateStaticProperty = '';
 
     /**
