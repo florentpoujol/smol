@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Validation;
 
+use Exception;
 use ReflectionProperty;
+use stdClass;
+use UnexpectedValueException;
 
 final class Validator
 {
@@ -63,17 +66,15 @@ final class Validator
 
     /**
      * @throws ValidationException
-     *
-     * @return void|never-returns
      */
-    public function throwIfNotValid(): void
+    public function throwIfNotValid(): self
     {
         if (! $this->isValidated) {
             $this->validate();
         }
 
         if ($this->messages === []) {
-            return;
+            return $this;
         }
 
         throw new ValidationException($this->getData(), $this->messages);
@@ -91,12 +92,12 @@ final class Validator
     {
         foreach ($this->rules as $key => $rules) {
             foreach ($rules as $rule) {
-                if ($rule === 'nullable') {
+                if ($rule === 'optional') {
                     continue;
                 }
 
                 if (is_callable($rule)) {
-                    if (is_string($rule)) { // prevent 'date' to be considered as a callable
+                    if (is_string($rule)) { // prevent global functions like 'date' to be considered as a callable
                         continue;
                     }
 
@@ -119,7 +120,8 @@ final class Validator
                     continue;
                 }
 
-                // the rule is a built-in string
+                // now, the rule is a built-in string
+
                 if ($rule === 'exists') {
                     if (
                         ($this->arrayData !== null && ! array_key_exists($key, $this->arrayData))
@@ -181,7 +183,7 @@ final class Validator
         }
 
         switch ($rule) {
-            case 'required': return $value !== null;
+            case 'notnull': return $value !== null;
             case 'uuid': return preg_match('/^[0-9a-fA-F]{8}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{12}$/i', $value) === 1;
             case 'email':
                 return preg_match(
@@ -192,7 +194,7 @@ final class Validator
             case 'date': return strtotime($value) !== false;
         }
 
-        throw new \Exception("Unknown rule '$rule'.");
+        throw new Exception("Unknown rule '$rule'.");
     }
 
     private function passesParameterizedRule(mixed $value, string $rule): bool
@@ -205,62 +207,45 @@ final class Validator
             assert(is_array($args));
         }
 
-        $strlen = function_exists('mb_strlen') ? 'mb_strlen' : 'strlen';
-
         switch ($rule) {
             case 'instanceof': return $value instanceof $arg;
             case 'regex': return preg_match($arg, $value) === 1;
-            case 'min':
+            case '>=': return $value >= $arg;
+            case '>': return $value > $arg;
+            case '<=': return $value <= $arg;
+            case '<':  return $value < $arg;
+            case 'minlength':
                 if (is_string($value)) {
-                    return $strlen($value) >= (int) $arg;
+                    return strlen($value) >= (int) $arg;
                 }
 
                 if (is_countable($value)) {
                     return count($value) >= (int) $arg;
                 }
-            // no break
-            case 'gte':
-                return $value >= $arg;
-
-            case 'max':
+                break;
+            case 'maxlength':
                 if (is_string($value)) {
-                    return $strlen($value) <= (int) $arg;
+                    return strlen($value) <= (int) $arg;
                 }
 
                 if (is_countable($value)) {
                     return count($value) <= (int) $arg;
                 }
-            // no break
-            case 'lte':
-                return $value <= $arg;
-
-            case 'gt': return $value > $arg;
-            case 'lt': return $value < $arg;
-            case 'size':
+                break;
+            case 'length':
                 if (is_string($value)) {
-                    return $strlen($value) === (int) $arg;
-                }
-
-                if (is_int($value)) {
-                    return $value === (int) $arg;
-                }
-
-                if (is_float($value)) {
-                    return $value === (float) $arg;
+                    return strlen($value) === (int) $arg;
                 }
 
                 if (is_countable($value)) {
                     return count($value) === (int) $arg;
                 }
-
-                // @phpstan-ignore-next-line
-                return $value === $arg;
-
-            case 'equal': return $value == $arg;
-            case 'same': return $value === $arg;
+                break;
+            case '==': return $value == $arg;
+            case '===': return $value === $arg;
             case 'in': return in_array((string) $value, $args, true);
         }
 
-        throw new \Exception("Unknown rule '$rule'.");
+        throw new Exception("Unknown rule '$rule'.");
     }
 }

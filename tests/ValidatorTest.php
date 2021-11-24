@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
 
+use FlorentPoujol\SmolFramework\Components\Validation\RuleInterface;
 use FlorentPoujol\SmolFramework\Components\Validation\Validator;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -22,15 +23,17 @@ final class ValidatorTest extends TestCase
                 'array' => [0, 1, 2],
             ])
             ->setRules([
-                'string' => ['nullable', 'string', 'size:10'],
-                'int' => ['required', 'int', 'min:122'],
-                'stdClass' => ['present', 'instanceof:stdClass'],
+                'string' => ['optional', 'string', 'length:10'],
+                'int' => ['notnull', 'int', '>:122'],
+                'stdClass' => ['exists', 'instanceof:stdClass'],
                 'date' => ['date'],
-                'array' => ['array', 'size:3'],
+                'array' => ['array', 'length:3'],
             ]);
 
-        self::assertTrue($validator->isValid());
-        self::assertEmpty($validator->getMessages());
+        $isValid = $validator->isValid();
+
+        self::assertSame([], $validator->getMessages());
+        self::assertTrue($isValid);
     }
 
     public function test_validate_object(): void
@@ -55,19 +58,21 @@ final class ValidatorTest extends TestCase
         $validator = (new Validator())
             ->setData($object)
             ->setRules([
-                'publicProperty' => ['same:publicProperty'],
-                'protectedProperty' => ['same:protectedProperty'],
-                'privateProperty' => ['same:privateProperty'],
+                'publicProperty' => ['===:publicProperty'],
+                'protectedProperty' => ['===:protectedProperty'],
+                'privateProperty' => ['===:privateProperty'],
 
-                'publicStaticProperty' => ['same:publicStaticProperty'],
-                'protectedStaticProperty' => ['same:protectedStaticProperty'],
-                'privateStaticProperty' => ['same:privateStaticProperty'],
+                'publicStaticProperty' => ['===:publicStaticProperty'],
+                'protectedStaticProperty' => ['===:protectedStaticProperty'],
+                'privateStaticProperty' => ['===:privateStaticProperty'],
 
-                'publicDynamicProperty' => ['same:publicDynamicProperty'],
+                'publicDynamicProperty' => ['===:publicDynamicProperty'],
             ]);
 
-        self::assertTrue($validator->isValid());
-        self::assertEmpty($validator->getMessages());
+        $isValid = $validator->isValid();
+
+        self::assertSame([], $validator->getMessages());
+        self::assertTrue($isValid);
     }
 
     // --------------------------------------------------
@@ -94,7 +99,7 @@ final class ValidatorTest extends TestCase
                 'object' => ['object'],
                 'closure' => ['callable'],
                 'array' => ['array', 'iterable', 'countable'],
-                'null' => ['null', 'nullable'],
+                'null' => ['null', 'optional'],
             ]);
 
         $isValid = $validator->isValid();
@@ -110,51 +115,39 @@ final class ValidatorTest extends TestCase
                 'instanceof' => new Validator(),
                 'regex' => '123.abcd',
 
-                'min_int' => 12,
-                'min_string' => '12',
-                'min_countable' => [1, 2],
-                'gte' => 12,
+                '>=' => 12,
+                '>' => 12,
+                '<=' => 12,
+                '<' => 12,
 
-                'max_int' => 12,
-                'max_string' => '12',
-                'max_countable' => [1, 2],
-                'lte' => 12,
+                'minlength_string' => '12',
+                'minlength_countable' => [1, 2],
+                'maxlength_string' => '12',
+                'maxlength_countable' => [1, 2],
+                'length_string' => '12',
+                'length_countable' => [1, 2],
 
-                'gt' => 12,
-                'lt' => 12,
-
-                'size_int' => 12,
-                'size_float' => 12.3,
-                'size_string' => '12',
-                'size_countable' => [1, 2],
-
-                'equal' => 12,
-                'same' => '12',
+                '==' => 12,
+                '===' => '12',
             ])
             ->setRules([
                 'instanceof' => ['instanceof:' . Validator::class],
                 'regex' => ['regex:/^[0-9]{3}\.[a-z]{1}/'],
 
-                'min_int' => ['min:12'],
-                'min_string' => ['min:2'],
-                'min_countable' => ['min:2'],
-                'gte' => ['gte:12'],
+                '>=' => ['>=:12'],
+                '>' => ['>:11'],
+                '<=' => ['<=:12'],
+                '<' => ['<:13'],
 
-                'max' => ['max:12'],
-                'max_string' => ['max:2'],
-                'max_countable' => ['max:2'],
-                'lte' => ['lte:12'],
+                'minlength_string' => ['minlength:2'],
+                'minlength_countable' => ['minlength:2'],
+                'maxlength_string' => ['maxlength:2'],
+                'maxlength_countable' => ['maxlength:2'],
+                'length_string' => ['length:2'],
+                'length_countable' => ['length:2'],
 
-                'gt' => ['gt:11'],
-                'lt' => ['lt:13'],
-
-                'size_int' => ['size:12'],
-                'size_float' => ['size:12.3'],
-                'size_string' => ['size:2'],
-                'size_countable' => ['size:2'],
-
-                'equal' => ['equal:12'],
-                'same' => ['same:12'],
+                '==' => ['==:12'],
+                '===' => ['===:12'],
             ]);
 
         $isValid = $validator->isValid();
@@ -175,7 +168,7 @@ final class ValidatorTest extends TestCase
                 'datetime' => '1970-01-01 00:00:00',
             ])
             ->setRules([
-                'string' => ['required'],
+                'string' => ['notnull'],
                 'uuid' => ['uuid'],
                 'uuid2' => ['uuid'],
                 'email' => ['email'],
@@ -190,7 +183,7 @@ final class ValidatorTest extends TestCase
     }
 }
 
-class TestEntityToValidate
+final class TestEntityToValidate
 {
     public string $publicProperty = '';
     protected string $protectedProperty = '';
@@ -220,5 +213,18 @@ class TestEntityToValidate
                 $this->{$key} = $value; // @phpstan-ignore-line
             }
         }
+    }
+}
+
+final class TestRule implements RuleInterface
+{
+    public function passes(string $key, mixed $value): bool
+    {
+        return true;
+    }
+
+    public function getMessage(string $key): ?string
+    {
+        return 'Some message';
     }
 }
