@@ -13,12 +13,13 @@ final class FileCache implements CacheInterface
 {
     public function __construct(
         private string $absoluteCacheFolder,
-        private string $prefix = ''
+        string $prefix = ''
     ) {
-        $this->absoluteCacheFolder = '/' . trim($absoluteCacheFolder, '/') . '/';
-        if ($prefix !== '') {
-            $this->absoluteCacheFolder .= "$prefix/";
+        if ($prefix === '') {
+            $prefix = 'noprefix';
         }
+
+        $this->absoluteCacheFolder = '/' . trim($absoluteCacheFolder, '/') . "/$prefix/";
 
         if (
             ! is_dir($this->absoluteCacheFolder)
@@ -34,7 +35,7 @@ final class FileCache implements CacheInterface
 
         file_put_contents(
             $this->absoluteCacheFolder . $key,
-            serialize([$expirationTimestamp, serialize($value)]),
+            serialize([$expirationTimestamp, $value]),
             LOCK_EX
         );
     }
@@ -65,7 +66,7 @@ final class FileCache implements CacheInterface
         }
 
         $item = [0, 0];
-        $strContent = file_get_contents($this->absoluteCacheFolder . $key);
+        $strContent = @file_get_contents($this->absoluteCacheFolder . $key);
         if (is_string($strContent)) {
             $item = unserialize($strContent);
             $item[1] += $offset;
@@ -78,7 +79,7 @@ final class FileCache implements CacheInterface
 
     public function has(string $key): bool
     {
-        return $this->get($key) === null;
+        return $this->get($key) !== null;
     }
 
     public function keys(string $prefix = ''): array
@@ -89,17 +90,19 @@ final class FileCache implements CacheInterface
         }
 
         $keys = [];
-        $prefix = $this->absoluteCacheFolder . $prefix;
-
         foreach ($files as $path) {
-            if (! str_starts_with($path, $prefix)) {
+            if (str_starts_with($path, '.')) {
                 continue;
             }
 
-            $strContent = file_get_contents($path);
+            if ($prefix !== '' && !str_starts_with($path, $prefix)) {
+                continue;
+            }
+
+            $strContent = @file_get_contents($this->absoluteCacheFolder . '/' . $path);
             if (is_string($strContent)) {
                 $item = unserialize($strContent);
-                if ($item[0] >= time()) {
+                if ($item[0] > time()) {
                     $keys[] = str_replace($this->absoluteCacheFolder, '', $path);
                 }
             }
@@ -110,14 +113,14 @@ final class FileCache implements CacheInterface
 
     public function get(string $key, mixed $default = null): mixed
     {
-        $filePath = $this->absoluteCacheFolder . $this->prefix . $key;
-        $strContent = file_get_contents($filePath);
+        $filePath = $this->absoluteCacheFolder . $key;
+        $strContent = @file_get_contents($filePath);
         if ($strContent === false) {
             return $default;
         }
 
         $item = unserialize($strContent);
-        if ($item[0] <= time()) {
+        if ($item[0] > time()) {
             return $item[1];
         }
 
@@ -128,7 +131,7 @@ final class FileCache implements CacheInterface
 
     public function delete(string $key): void
     {
-        unlink($this->absoluteCacheFolder . $this->prefix . $key);
+        @unlink($this->absoluteCacheFolder . $key);
     }
 
     public function flush(string $prefix = ''): int
@@ -138,21 +141,18 @@ final class FileCache implements CacheInterface
             return 0;
         }
 
-        if ($prefix === '') {
-            rmdir($this->absoluteCacheFolder);
-            mkdir($this->absoluteCacheFolder);
-
-            return count($files);
-        }
-
         $count = 0;
-        $prefix = $this->absoluteCacheFolder . $prefix;
-
         foreach ($files as $path) {
-            if (str_starts_with($path, $prefix)) {
-                unlink($path);
-                ++$count;
+            if (str_starts_with($path, '.')) {
+                continue;
             }
+
+            if ($prefix !== '' && ! str_starts_with($path, $prefix)) {
+                continue;
+            }
+
+            unlink($this->absoluteCacheFolder . '/' . $path);
+            ++$count;
         }
 
         return $count;
@@ -167,7 +167,11 @@ final class FileCache implements CacheInterface
 
         $count = 0;
         foreach ($files as $path) {
-            $strContent = file_get_contents($path);
+            if (str_starts_with($path, '.')) {
+                continue;
+            }
+
+            $strContent = @file_get_contents($this->absoluteCacheFolder . '/' . $path);
             if (is_string($strContent)) {
                 $item = unserialize($strContent);
                 if ($item[0] < time()) {
