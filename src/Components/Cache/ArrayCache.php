@@ -9,16 +9,11 @@ final class ArrayCache implements CacheInterface
     /** @var array<string, array{0: int, 1: mixed}> Each cache item is the expiration timestamp and value */
     private array $items = [];
 
-    public function __construct(
-        private string $prefix = '',
-    ) {
-    }
-
     public function set(string $key, mixed $value, int $ttlInSeconds = null): void
     {
         $expirationTimestamp = $ttlInSeconds === null ? PHP_INT_MAX : time() + $ttlInSeconds;
 
-        $this->items[$this->prefix . $key] = [$expirationTimestamp, $value];
+        $this->items[$key] = [$expirationTimestamp, $value];
     }
 
     public function increment(string $key, int $initialValue = 0, int $ttlInSeconds = null): int
@@ -45,14 +40,14 @@ final class ArrayCache implements CacheInterface
             return $initialValue;
         }
 
-        $this->items[$this->prefix . $key][1] += $offset;
+        $this->items[$key][1] += $offset;
 
-        return $this->items[$this->prefix . $key][1];
+        return $this->items[$key][1];
     }
 
     public function has(string $key): bool
     {
-        return $this->get($key) === null;
+        return $this->get($key) !== null;
     }
 
     public function keys(string $prefix = ''): array
@@ -62,11 +57,10 @@ final class ArrayCache implements CacheInterface
         }
 
         $keys = [];
-        $prefix = $this->prefix . $prefix;
         $currentTimestamp = time();
 
         foreach ($this->items as $key => $item) {
-            if ($item[0] >= $currentTimestamp && str_starts_with($key, $prefix)) {
+            if ($item[0] > $currentTimestamp && str_starts_with($key, $prefix)) {
                 $keys[] = $key;
             }
         }
@@ -76,14 +70,13 @@ final class ArrayCache implements CacheInterface
 
     public function get(string $key, mixed $default = null): mixed
     {
-        $key = $this->prefix . $key;
         $item = $this->items[$key] ?? null;
 
         if ($item === null) {
             return $default;
         }
 
-        if ($item[0] <= time()) {
+        if ($item[0] > time()) {
             return $item[1];
         }
 
@@ -94,7 +87,7 @@ final class ArrayCache implements CacheInterface
 
     public function delete(string $key): void
     {
-        unset($this->items[$this->prefix . $key]);
+        unset($this->items[$key]);
     }
 
     public function flush(string $prefix = ''): int
@@ -107,7 +100,6 @@ final class ArrayCache implements CacheInterface
         }
 
         $count = 0;
-        $prefix = $this->prefix . $prefix;
 
         foreach ($this->items as $key => $item) {
             if (str_starts_with($key, $prefix)) {
@@ -121,11 +113,10 @@ final class ArrayCache implements CacheInterface
 
     public function flushExpiredValues(): int
     {
-        $time = time();
         $count = 0;
 
         foreach ($this->items as $key => $item) {
-            if ($item[0] < $time) { // this assumes we go through all the items in less than 1 second
+            if ($item[0] <= time()) {
                 unset($this->items[$key]);
                 ++$count;
             }
