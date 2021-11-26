@@ -6,12 +6,14 @@ namespace Tests\FlorentPoujol\SmolFramework;
 
 use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 use PHPUnit\Framework\TestCase;
+use function FlorentPoujol\SmolFramework\Framework\env;
+use function FlorentPoujol\SmolFramework\Framework\read_environment_file;
 
 final class ConfigRepositoryTest extends TestCase
 {
     public function test_that_the_config_file_is_read(): void
     {
-        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config');
+        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config/config');
 
         self::assertSame('file1', $repo->get('file1.key'));
         self::assertSame('file2', $repo->get('file2.key'));
@@ -19,7 +21,9 @@ final class ConfigRepositoryTest extends TestCase
 
     public function test_that_the_environment_is_read(): void
     {
-        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config');
+        read_environment_file(__DIR__ . '/Fixtures/Config/.env');
+
+        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config/config');
 
         self::assertSame('env var 1 value', $repo->get('file1.from_env'));
         self::assertSame('env var 2 default value', $repo->get('file1.from_env_with_default'));
@@ -27,7 +31,7 @@ final class ConfigRepositoryTest extends TestCase
 
     public function test_get(): void
     {
-        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config');
+        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config/config');
 
         self::assertIsArray($repo->get('file1'));
         self::assertNotEmpty($repo->get('file1'));
@@ -47,7 +51,7 @@ final class ConfigRepositoryTest extends TestCase
 
     public function test_set(): void
     {
-        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config');
+        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config/config');
 
         self::assertSame('file1', $repo->get('file1.key'));
         $repo->set('file1.key', 'the new value');
@@ -86,7 +90,7 @@ final class ConfigRepositoryTest extends TestCase
 
     public function test_env_reading_handles_spaces_correctly(): void
     {
-        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config');
+        $repo = new ConfigRepository(__DIR__ . '/Fixtures/Config/config');
         self::assertNotNull($repo->get('file1.from_env'));
 
         self::assertSame('nospace', env('NO_SPACE'));

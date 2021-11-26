@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use function FlorentPoujol\SmolFramework\Framework\env;
+
 return [
     'key' => 'file1',
     'array_key' => [

@@ -17,7 +17,7 @@ final class TranslationRepositoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->configRepo = new ConfigRepository(__DIR__ . '/Fixtures/Translations');
+        $this->configRepo = new ConfigRepository(__DIR__ . '/Fixtures/Translations/config');
         $this->transRepo = new TranslationsRepository(__DIR__ . '/Fixtures/Translations', $this->configRepo);
 
         // current language is FR, fallback is EN

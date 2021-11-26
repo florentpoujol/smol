@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SmolFramework\Framework\Framework;
+namespace FlorentPoujol\SmolFramework\Framework;
+
 use FlorentPoujol\SmolFramework\Framework\Translations\TranslationsRepository;
 
 if (! function_exists('env')) {
