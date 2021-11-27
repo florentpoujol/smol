@@ -30,7 +30,8 @@ final class CacheRateLimiter
             return $this->hitSlidingWindow();
         }
 
-        return (bool) $this->fixedWindowLock->wait(2, [$this, 'hitFixedWindow']);
+        // using a closure here instead of [$this, 'hitFixedWindow'] because the method is private
+        return (bool) $this->fixedWindowLock->wait(2, fn () => $this->hitFixedWindow());
     }
 
     private function hitFixedWindow(): bool
@@ -50,7 +51,7 @@ final class CacheRateLimiter
             return false;
         }
 
-        ++$data['remaining_hits'];
+        --$data['remaining_hits'];
         $this->cache->set($this->cacheKey, $data, $data['max_timestamp'] - time());
 
         return true;
@@ -64,7 +65,7 @@ final class CacheRateLimiter
 
         $hitCount = count($this->cache->keys($this->cacheKey));
 
-        return $hitCount >= $this->maxHits;
+        return $hitCount <= $this->maxHits;
     }
 
     public function remainingTimeInSeconds(): int
@@ -83,8 +84,9 @@ final class CacheRateLimiter
         }
 
         // The number of keys (of hits) can be more than the maxHits, but all keys here are inside the window.
-        // So, get the maxHits'th key, which is the key that needs to expire to be able to hit the limiter again (if there is no more hits in between).
-        $key = array_slice($keys, $this->maxHits + 1, 1)[0];
+        // So, get the maxHits'th key -from the end of the list of keys that are in order of creation-
+        // which is the key that needs to expire to be able to hit the limiter again (if there is no more hits in between).
+        $key = array_slice(array_reverse($keys), $this->maxHits - 1, 1)[0];
         $timestamp = $this->cache->get($key);
 
         return $timestamp - (time() - $this->windowSizeInSeconds); // time - windowSizeInSeconds is the timestamp of the start of the window, that is before the key's timestamp
