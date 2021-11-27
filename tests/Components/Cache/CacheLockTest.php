@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CacheLockTest extends TestCase
 {
-    public function test_main(): void
+    public function test(): void
     {
         // arrange
         $cache = new ArrayCache();
@@ -21,8 +21,9 @@ final class CacheLockTest extends TestCase
         self::assertFalse($lock2->acquire());
 
         $lock2->release();
-        self::assertFalse($lock1->acquire());
         self::assertTrue($lock2->acquire());
+        self::assertFalse($lock1->acquire());
 
+        self::assertTrue($lock1->wait(2, fn () => true));
     }
 }
