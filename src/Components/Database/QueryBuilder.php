@@ -35,6 +35,8 @@ final class QueryBuilder
     {
         $this->action = '';
 
+        $this->rawSelects = [];
+
         $this->fields = [];
         $this->insertedRowCount = 0;
         $this->upsertKeys = [];
@@ -68,6 +70,16 @@ final class QueryBuilder
 
     // --------------------------------------------------
     // select
+
+    /** @var array<string> */
+    private array $rawSelects = [];
+
+    public function selectRaw(srting $rawSelect): self
+    {
+        $this->rawSelects[] = $rawSelect;
+
+        return $this;
+    }
 
     /**
      * @param array<string>|string $fields
@@ -182,6 +194,11 @@ final class QueryBuilder
     private function buildSelectQueryString(): string
     {
         $fields = '*';
+
+        if ($this->rawSelects !== []) {
+            $fields = implode(',', $this->rawSelects);
+        }
+
         if ($this->fields !== []) {
             $fields = implode(', ', array_map([$this, 'quoteField'], $this->fields));
         }
@@ -217,7 +234,9 @@ final class QueryBuilder
     public function count(): int
     {
         // calling selectMany() here since selectSingle() add a LIMIT clause
-        return $this->selectMany('COUNT(*) AS _count')[0]['_count'] ?? 0; // @phpstan-ignore-line
+        return (int) ($this
+            ->selectRaw('COUNT(*)')
+            ->selectMany()[0]['COUNT(*)'] ?? 0);
     }
 
     public function exists(): bool

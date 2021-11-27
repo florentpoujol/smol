@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection SqlResolve */
+
 declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework;
@@ -405,6 +407,38 @@ final class QueryBuilderTest extends TestCase
         self::assertSame($expected, $qb->toSql());
 
         self::assertTrue($exists);
+    }
+
+    public function test_count(): void
+    {
+        // arrange
+        $qb = $this->seedForSelect();
+
+        // act
+        $count = $qb
+            ->reset()
+            ->inTable('test')
+            ->count();
+
+        // assert
+
+        $expected = 'SELECT COUNT(*) FROM `test` ';
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertSame(3, $count);
+
+        // act
+        $count = $qb
+            ->reset()
+            ->inTable('test')
+            ->where('name', '=', 'Florent1')
+            ->count();
+
+        // assert
+        $expected = 'SELECT COUNT(*) FROM `test` WHERE `name` = ? ';
+        self::assertSame($expected, $qb->toSql());
+
+        self::assertSame(1, $count);
     }
 
     public function test_join(): void
