@@ -8,4 +8,16 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $framework = Framework::make(__DIR__ . '/..');
 
-$framework->handleHttpRequest();
+// set custom container if needed
+// set FPM reqeust handler
+
+// set service providers
+// set plugins in order
+
+$framework->register();
+
+$framework->boot();
+
+$framework->run();
+
+$framework->cleanUp();
