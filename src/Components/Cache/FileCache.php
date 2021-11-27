@@ -95,7 +95,7 @@ final class FileCache implements CacheInterface
                 continue;
             }
 
-            if ($prefix !== '' && !str_starts_with($path, $prefix)) {
+            if ($prefix !== '' && ! str_starts_with($path, $prefix)) {
                 continue;
             }
 

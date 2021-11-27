@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\FlorentPoujol\SmolFramework\Components\Cache;
 
-use FlorentPoujol\SmolFramework\Components\Cache\ArrayCache;
 use FlorentPoujol\SmolFramework\Components\Cache\FileCache;
 use PHPUnit\Framework\TestCase;
 
@@ -118,7 +117,8 @@ final class FileCacheTest extends TestCase
     public function test_ttl_expiration(): void
     {
         // arrange
-        $cache = new ArrayCache();
+        $cache = new FileCache(__DIR__ . '/../Fixtures/FileCache');
+        $cache->flush();
 
         self::assertFalse($cache->has('exp'));
         self::assertFalse($cache->has('no_exp'));
