@@ -25,7 +25,7 @@ final class DatabaseCache implements CacheInterface
             ->upsertSingle([
                 'key' => $this->prefix . $key,
                 'value' => serialize($value),
-                'expire_at' => date('Y-m-d H:i:s', $expirationTimestamp),
+                'expire_at' => $expirationTimestamp,
             ], ['key']);
     }
 
@@ -52,7 +52,7 @@ final class DatabaseCache implements CacheInterface
                 ->upsertSingle([
                     'key' => $this->prefix . $key,
                     'value' => serialize($initialValue),
-                    'expire_at' => date('Y-m-d H:i:s', $expirationTimestamp),
+                    'expire_at' => $expirationTimestamp,
                 ], ['key']);
 
             return $initialValue;
@@ -72,6 +72,7 @@ final class DatabaseCache implements CacheInterface
     {
         return $this->queryBuilder->reset()
             ->where('key', '=', $this->prefix . $key)
+            ->where('expire_at', '>', time())
             ->exists();
     }
 
@@ -80,7 +81,7 @@ final class DatabaseCache implements CacheInterface
         return array_column(
             $this->queryBuilder->reset()
                 ->where('key', 'LIKE', $this->prefix . $prefix . '%')
-                ->where('expire_at', '>=', date('Y-m-d H:i:s'))
+                ->where('expire_at', '>', time())
                 ->selectMany(['key']),
             'key'
         );
@@ -99,7 +100,7 @@ final class DatabaseCache implements CacheInterface
             return $default;
         }
 
-        if (strtotime($item['expire_at']) <= time()) {
+        if ((int) $item['expire_at'] > time()) {
             return unserialize($item['value']);
         }
 
@@ -140,7 +141,7 @@ final class DatabaseCache implements CacheInterface
     public function flushExpiredValues(): int
     {
         $count = $this->queryBuilder->reset()
-            ->where('expire_at', '<', date('Y-m-d H:i:s'))
+            ->where('expire_at', '<', time())
             ->count();
 
         $this->queryBuilder->delete();
