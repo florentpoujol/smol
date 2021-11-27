@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Tests\Components;
 
 use FlorentPoujol\SmolFramework\Framework\Http\Route;
 use FlorentPoujol\SmolFramework\Framework\Http\Router;
+use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware1;
+use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware2;
 use PHPUnit\Framework\TestCase;
-use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware1;
-use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware2;
 
 final class RouterTest extends TestCase
 {

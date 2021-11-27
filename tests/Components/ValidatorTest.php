@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Tests\Components;
 
 use FlorentPoujol\SmolFramework\Components\Validation\RuleInterface;
 use FlorentPoujol\SmolFramework\Components\Validation\Validator;

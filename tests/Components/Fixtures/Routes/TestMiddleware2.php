@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SmolFramework\Fixtures\Routes;
+namespace FlorentPoujol\SmolFramework\Tests\Components\Fixtures\Routes;
 
 final class TestMiddleware2
 {

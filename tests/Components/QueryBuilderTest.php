@@ -4,7 +4,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SmolFramework;
+namespace FlorentPoujol\SmolFramework\Tests\Components;
 
 use DateTime;
 use FlorentPoujol\SmolFramework\Components\Database\QueryBuilder;
@@ -536,7 +536,7 @@ final class QueryBuilderTest extends TestCase
             ]);
 
         // assert
-        /** @var array<\Tests\FlorentPoujol\SmolFramework\MyEntity> $entries */
+        /** @var array<\FlorentPoujol\SmolFramework\Tests\MyEntity> $entries */
         $entries = $qb->reset()
             ->hydrate(MyEntity::class)
             ->selectMany();

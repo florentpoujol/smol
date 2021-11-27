@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use FlorentPoujol\SmolFramework\Framework\Http\Route;
-use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware1;
-use Tests\FlorentPoujol\SmolFramework\Fixtures\Routes\TestMiddleware2;
+use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware1;
+use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware2;
 
 return [
     new Route('get', '/get/static-route', 'nothing'),

@@ -16,7 +16,7 @@
             "src/Framework/helpers.php"
         ],
         "psr-4" : {
-            "Tests\\FlorentPoujol\\SmolFramework\\" : "tests/"
+            "FlorentPoujol\\SmolFramework\\Tests\\" : "tests/"
         }
     },
     "require": {

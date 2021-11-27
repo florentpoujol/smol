@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\FlorentPoujol\SmolFramework\Components\Cache;
+namespace FlorentPoujol\SmolFramework\Tests\Components\Cache;
 
 use FlorentPoujol\SmolFramework\Components\Cache\ArrayCache;
 use PHPUnit\Framework\TestCase;
