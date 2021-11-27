@@ -2,10 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\RateLimiter;
-
-use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
-use FlorentPoujol\SmolFramework\Components\Lock\CacheLock;
+namespace FlorentPoujol\SmolFramework\Components\Cache;
 
 final class CacheRateLimiter
 {
