@@ -4,19 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Container;
 
-use FlorentPoujol\SmolFramework\Components\Cache\ArrayCache;
-use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
-use FlorentPoujol\SmolFramework\Components\Log\DailyFileLogger;
-use FlorentPoujol\SmolFramework\Framework\Http\Psr15RequestHandler;
-use Nyholm\Psr7\Request;
-use PDO;
 use Psr\Container\ContainerInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use Psr\Log\LoggerInterface;
-use Redis;
 use ReflectionNamedType;
 use ReflectionUnionType;
 
@@ -29,16 +17,7 @@ final class Container implements ContainerInterface
     private array $bindings = [];
 
     /** @var array<class-string<ServiceType>, callable|string> */
-    private array $singletonBindings = [
-        ServerRequestInterface::class => [ServiceFactories::class, 'makeServerRequest'],
-        ResponseInterface::class => [ServiceFactories::class, 'makeResponse'],
-        RequestHandlerInterface::class => Psr15RequestHandler::class,
-        RequestInterface::class => Request::class, // client request
-        LoggerInterface::class => DailyFileLogger::class,
-        PDO::class => [ServiceFactories::class, 'makePdo'],
-        Redis::class => [ServiceFactories::class, 'makeRedis'],
-        CacheInterface::class => ArrayCache::class,
-    ];
+    private array $singletonBindings = [];
 
     /**
      * Values cached by get().

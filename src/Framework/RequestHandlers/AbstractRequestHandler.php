@@ -11,9 +11,10 @@ use FlorentPoujol\SmolFramework\Framework\Http\Router;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Server\RequestHandlerInterface as PsrRequestHandlerInterface;
+use Throwable;
 
-abstract class AbstractRequestHandler
+abstract class AbstractRequestHandler implements RequestHandlerInterface
 {
     public function __construct(
         private Container $container
@@ -21,6 +22,7 @@ abstract class AbstractRequestHandler
     }
 
     abstract protected function getHttpMethod(): string;
+
     abstract protected function getUri(): string;
 
     // --------------------------------------------------
@@ -29,7 +31,7 @@ abstract class AbstractRequestHandler
     public function handle(): void
     {
         try {
-            /** @var \FlorentPoujol\SmolFramework\Framework\Http\Router $router */
+            /** @var Router $router */
             $router = $this->container->get(Router::class);
             $route = $router->resolveRoute($this->getHttpMethod(), $this->getUri());
 
@@ -65,8 +67,8 @@ abstract class AbstractRequestHandler
             if ($hasMiddleware) {
                 $response = $this->sendResponseThroughMiddleware($response, $route);
             }
-        } catch (\Throwable $exception) {
-            /** @var \FlorentPoujol\SmolFramework\Framework\Exceptions\ExceptionHandler $exceptionHandler */
+        } catch (Throwable $exception) {
+            /** @var ExceptionHandler $exceptionHandler */
             $exceptionHandler = $this->container->get(ExceptionHandler::class);
 
             $exceptionHandler->report($exception);
@@ -82,8 +84,8 @@ abstract class AbstractRequestHandler
      */
     public function handleRequestThroughPsr15Middleware(): void
     {
-        /** @var RequestHandlerInterface $handler */
-        $handler = $this->container->get(RequestHandlerInterface::class);
+        /** @var PsrRequestHandlerInterface $handler */
+        $handler = $this->container->get(PsrRequestHandlerInterface::class);
 
         /** @var ServerRequestInterface $serverRequest */
         $serverRequest = $this->container->get(ServerRequestInterface::class);

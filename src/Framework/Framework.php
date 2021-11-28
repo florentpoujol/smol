@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Framework;
 
 use FlorentPoujol\SmolFramework\Components\Container\Container;
-use FlorentPoujol\SmolFramework\Framework\RequestHandlers\FpmRequestHandler;
+use FlorentPoujol\SmolFramework\Framework\RequestHandlers\RequestHandlerInterface;
 
 final class Framework
 {
@@ -66,7 +66,18 @@ final class Framework
         return $this->container;
     }
 
-    public function register(): void
+    /** @var array<ServiceProviderInterface> */
+    private array $serviceProviders = [];
+
+    /**
+     * @param array<ServiceProviderInterface> $serviceProviders
+     */
+    public function setServiceProviders(array $serviceProviders): void
+    {
+        $this->serviceProviders = $serviceProviders;
+    }
+
+    public function run(): void
     {
         $this->container = new $this->config['container_fqcn']();
         $this->container->setInstance(self::class, $this);
@@ -75,25 +86,31 @@ final class Framework
             $this->container->setParameter($key, $value);
         }
 
-        // loop on plugins
-    }
+        $bootCallable = [];
+        foreach ($this->serviceProviders as $serviceProvider) {
+            if (is_callable($serviceProvider)) {
+                $serviceProvider($this->container);
+                $bootCallable[] = $serviceProvider;
 
-    public function boot(): void
-    {
-        // loop on plugins
-    }
+                continue;
+            }
 
-    public function run(): void
-    {
-        /** @var FpmRequestHandler $reqeustHandler */
-        $requestHandler = $this->container->get(FpmRequestHandler::class);
+            $instance = $this->container->get($serviceProvider);
+            $register = [$instance, 'register'];
+            assert(is_callable($register));
+            $register($this->container);
+
+            $boot = [$instance, 'boot'];
+            assert(is_callable($boot));
+            $bootCallable[] = $boot;
+        }
+
+        foreach ($bootCallable as $callable) {
+            $callable();
+        }
+
+        /** @var RequestHandlerInterface $requestHandler */
+        $requestHandler = $this->container->get(RequestHandlerInterface::class);
         $requestHandler->handle();
-
-        // clean up
-    }
-
-    public function cleanUp(): void
-    {
-        // loop on plugin
     }
 }

@@ -3,21 +3,24 @@
 declare(strict_types=1);
 
 use FlorentPoujol\SmolFramework\Framework\Framework;
+use FlorentPoujol\SmolFramework\Framework\RequestHandlers\SingleRequestHandler;
+use FlorentPoujol\SmolFramework\Framework\SmolServiceProvider;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// \FlorentPoujol\SmolFramework\Framework\read_environment_file(__DIR__ . '/../.env');
+
 $framework = Framework::make(__DIR__ . '/..');
 
-// set custom container if needed
-// set FPM reqeust handler
+// --------------------------------------------------
+// register service providers and/or do other init steps
 
-// set service providers
-// set plugins in order
+$framework->setServiceProviders([
+    SmolServiceProvider::class,
+    SingleRequestHandler::class,
+    // YourAppServiceProvider::class,
+]);
 
-$framework->register();
-
-$framework->boot();
+// --------------------------------------------------
 
 $framework->run();
-
-$framework->cleanUp();

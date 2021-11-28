@@ -2,43 +2,40 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Container;
+namespace FlorentPoujol\SmolFramework\Framework;
 
 use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
-use FlorentPoujol\SmolFramework\Framework\Http\ServerRequest;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response;
-use Nyholm\Psr7Server\ServerRequestCreator;
+use FlorentPoujol\SmolFramework\Components\Container\Container;
+use FlorentPoujol\SmolFramework\Components\Log\ResourceLogger;
+use FlorentPoujol\SmolFramework\Framework\Http\Psr15RequestHandler;
 use PDO;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use Redis;
 
-final class ServiceFactories
+/**
+ * Common/Default services for Smol Framework.
+ */
+final class SmolServiceProvider implements ServiceProviderInterface
 {
-    public static function makeServerRequest(): ServerRequestInterface
+    public function register(Container $container): void
     {
-        $psr17Factory = new Psr17Factory();
-
-        $serverRequestFactory = new ServerRequestCreator(
-            $psr17Factory,
-            $psr17Factory,
-            $psr17Factory,
-            $psr17Factory,
-        );
-
-        return new ServerRequest($serverRequestFactory->fromGlobals());
+        $container->bind(PDO::class, [$this, 'makePdo']);
+        $container->bind(Redis::class, [$this, 'makeRedis']);
+        $container->bind(RequestHandlerInterface::class, Psr15RequestHandler::class);
+        $container->bind(LoggerInterface::class, ResourceLogger::class);
     }
 
-    public static function makeResponse(): ResponseInterface
+    public function boot(): void
     {
-        return new Response();
     }
+
+    // --------------------------------------------------
 
     /**
      * @param array{dsn: string, username: ?string, password: ?string, options: ?array} $constructorArguments
      */
-    public static function makePdo(Container $container, array $constructorArguments = null): PDO
+    public function makePdo(Container $container, array $constructorArguments = null): PDO
     {
         $defaultOptions = [
             PDO::ATTR_EMULATE_PREPARES => false,
@@ -55,7 +52,7 @@ final class ServiceFactories
         return new PDO(...$constructorArguments);
     }
 
-    public static function makeRedis(Container $container): Redis
+    public function makeRedis(Container $container): Redis
     {
         $redisExtVersion = phpversion('redis');
         if ($redisExtVersion === false) {
