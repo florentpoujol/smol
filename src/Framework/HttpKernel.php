@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework\RequestHandlers;
+namespace FlorentPoujol\SmolFramework\Framework;
 
 use FlorentPoujol\SmolFramework\Components\Container\Container;
 use FlorentPoujol\SmolFramework\Framework\Exceptions\ExceptionHandler;
@@ -14,31 +14,22 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface as PsrRequestHandlerInterface;
 use Throwable;
 
-abstract class AbstractRequestHandler implements RequestHandlerInterface
+final class HttpKernel
 {
     public function __construct(
-        private Container $container
+        private Container $container,
     ) {
     }
 
-    abstract protected function getHttpMethod(): string;
-
-    abstract protected function getUri(): string;
-
-    // --------------------------------------------------
-    // HTTP request stuffs
-
-    public function handle(): void
+    public function handle(ServerRequestInterface $serverRequest): ResponseInterface
     {
         try {
             /** @var Router $router */
             $router = $this->container->get(Router::class);
-            $route = $router->resolveRoute($this->getHttpMethod(), $this->getUri());
+            $route = $router->resolveRoute($serverRequest->getMethod(), $serverRequest->getUri()->getPath());
 
             if ($route === null) {
-                $this->sendResponseToClient(
-                    new Response(404, body: $this->getUri() . ' not found')
-                );
+                return new Response(404, body: $serverRequest->getUri()->getPath() . ' not found');
             }
 
             $this->container->setInstance(Route::class, $route);
@@ -50,16 +41,19 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
                 $status = str_starts_with($action, 'redirect-permanent:') ? 301 : 302;
                 $location = str_replace(['redirect:', 'redirect-permanent:'], '', $action);
 
-                $this->sendResponseToClient(new Response($status, ['Location' => $location])); // app exit here
+                return new Response($status, ['Location' => $location]);
             }
 
             if ($route->hasPsr15Middleware()) {
-                $this->handleRequestThroughPsr15Middleware(); // app exit here
+                return $this->handleRequestThroughPsr15Middleware();
             }
 
             $hasMiddleware = $route->getMiddleware() !== [];
             if ($hasMiddleware) {
-                $this->sendRequestThroughMiddleware($route); // app *may* exit here
+                $response = $this->sendRequestThroughMiddleware($route);
+                if ($response !== null) {
+                    return $response;
+                }
             }
 
             $response = $this->callRouteAction($route);
@@ -76,13 +70,13 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
             $response = $exceptionHandler->render($exception);
         }
 
-        $this->sendResponseToClient($response);
+        return $response;
     }
 
     /**
      * @return never-return
      */
-    public function handleRequestThroughPsr15Middleware(): void
+    public function handleRequestThroughPsr15Middleware(): ResponseInterface
     {
         /** @var PsrRequestHandlerInterface $handler */
         $handler = $this->container->get(PsrRequestHandlerInterface::class);
@@ -90,15 +84,10 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
         /** @var ServerRequestInterface $serverRequest */
         $serverRequest = $this->container->get(ServerRequestInterface::class);
 
-        $response = $handler->handle($serverRequest); // see in the handle method for explanation as to why this single like does everything and return the final response, whatever happens in between
-
-        $this->sendResponseToClient($response); // app exit here
+        return $handler->handle($serverRequest); // see in the handle method for explanation as to why this single like does everything and return the final response, whatever happens in between
     }
 
-    /**
-     * @return never-return|void
-     */
-    private function sendRequestThroughMiddleware(Route $route): void
+    private function sendRequestThroughMiddleware(Route $route): ?ResponseInterface
     {
         $this->responseMiddleware = [];
         $serverRequest = $this->container->get(ServerRequestInterface::class);
@@ -131,11 +120,13 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
                     $response = $this->sendResponseThroughMiddleware($response, $route);
                 }
 
-                $this->sendResponseToClient($response); // app exit here
+                return $response;
             }
 
             array_unshift($this->responseMiddleware, $responseMiddleware ?? $requestMiddleware);
         }
+
+        return null;
     }
 
     /** @var array<callable> */
@@ -167,8 +158,14 @@ abstract class AbstractRequestHandler implements RequestHandlerInterface
         );
     }
 
-    /**
-     * @return never-return
-     */
-    abstract public function sendResponseToClient(ResponseInterface $response): void;
+    // --------------------------------------------------
+
+    public function register(Container $container): void
+    {
+    }
+
+    public function boot(): void
+    {
+        // nothing to do
+    }
 }

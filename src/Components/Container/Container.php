@@ -34,7 +34,7 @@ final class Container implements ContainerInterface
 
     public function __construct()
     {
-        $this->instances[ContainerInterface::class] = $this;
+        $this->instances[self::class] = $this;
     }
 
     public function setParameter(string $name, mixed $value): void

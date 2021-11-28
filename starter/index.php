@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use FlorentPoujol\SmolFramework\Framework\Framework;
-use FlorentPoujol\SmolFramework\Framework\RequestHandlers\SingleRequestHandler;
+use FlorentPoujol\SmolFramework\Framework\HttpKernel;
 use FlorentPoujol\SmolFramework\Framework\SmolServiceProvider;
+use Psr\Http\Message\ServerRequestInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -17,10 +18,46 @@ $framework = Framework::make(__DIR__ . '/..');
 
 $framework->setServiceProviders([
     SmolServiceProvider::class,
-    SingleRequestHandler::class,
     // YourAppServiceProvider::class,
 ]);
 
-// --------------------------------------------------
+$framework->register();
 
-$framework->run();
+$framework->boot();
+
+// --------------------------------------------------
+// actually handle the HTTP request
+
+$httpKernel = new HttpKernel($framework->getContainer());
+
+/** @var ServerRequestInterface $serverRequest */
+$serverRequest = $framework->getContainer()->get(ServerRequestInterface::class);
+
+$response = $httpKernel->handle($serverRequest);
+
+// --------------------------------------------------
+// send response to client
+
+http_response_code($response->getStatusCode());
+
+/**
+ * @var array<string> $values
+ */
+foreach ($response->getHeaders() as $name => $values) {
+    foreach ($values as $value) {
+        header("$name: $value", false);
+    }
+}
+
+$response->getBody()->rewind();
+
+echo $response->getBody()->getContents();
+
+$response->getBody()->close();
+
+// --------------------------------------------------
+// stops/cleanup the framework
+
+$framework->stop();
+
+exit(0);

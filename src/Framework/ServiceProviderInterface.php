@@ -11,4 +11,6 @@ interface ServiceProviderInterface
     public function register(Container $container): void;
 
     public function boot(): void;
+
+    public function stop(): void;
 }

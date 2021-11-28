@@ -8,7 +8,15 @@ use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 use FlorentPoujol\SmolFramework\Components\Container\Container;
 use FlorentPoujol\SmolFramework\Components\Log\ResourceLogger;
 use FlorentPoujol\SmolFramework\Framework\Http\Psr15RequestHandler;
+use FlorentPoujol\SmolFramework\Framework\Http\ServerRequest;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\Request;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7Server\ServerRequestCreator;
 use PDO;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
 use Redis;
@@ -20,17 +28,40 @@ final class SmolServiceProvider implements ServiceProviderInterface
 {
     public function register(Container $container): void
     {
+        $container->bind(ServerRequestCreator::class, [$this, 'makePsrServerRequestCreator']);
+        $container->bind(ServerRequestInterface::class, [$this, 'makePsrServerRequest']);
+        $container->bind(ResponseInterface::class, fn () => new Response());
+        $container->bind(RequestInterface::class, Request::class); // client request
+        $container->bind(RequestHandlerInterface::class, Psr15RequestHandler::class);
+
         $container->bind(PDO::class, [$this, 'makePdo']);
         $container->bind(Redis::class, [$this, 'makeRedis']);
-        $container->bind(RequestHandlerInterface::class, Psr15RequestHandler::class);
         $container->bind(LoggerInterface::class, ResourceLogger::class);
     }
 
     public function boot(): void
     {
+        // nothing to do here
+    }
+
+    public function stop(): void
+    {
+        // nothing to do here
     }
 
     // --------------------------------------------------
+
+    public function makePsrServerRequestCreator(): ServerRequestCreator
+    {
+        $psr17Factory = new Psr17Factory();
+
+        return new ServerRequestCreator($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory);
+    }
+
+    public function makePsrServerRequest(): ServerRequestInterface
+    {
+        return new ServerRequest($this->makePsrServerRequestCreator()->fromGlobals());
+    }
 
     /**
      * @param array{dsn: string, username: ?string, password: ?string, options: ?array} $constructorArguments

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Framework;
 
 use FlorentPoujol\SmolFramework\Components\Container\Container;
-use FlorentPoujol\SmolFramework\Framework\RequestHandlers\RequestHandlerInterface;
+use FlorentPoujol\SmolFramework\Components\Events\EventDispatcher;
 
 final class Framework
 {
@@ -66,7 +66,7 @@ final class Framework
         return $this->container;
     }
 
-    /** @var array<ServiceProviderInterface> */
+    /** @var array<class-string<ServiceProviderInterface>|ServiceProviderInterface> */
     private array $serviceProviders = [];
 
     /**
@@ -77,40 +77,48 @@ final class Framework
         $this->serviceProviders = $serviceProviders;
     }
 
-    public function run(): void
+    private EventDispatcher $eventDispatcher;
+
+    public function register(): void
     {
         $this->container = new $this->config['container_fqcn']();
         $this->container->setInstance(self::class, $this);
+
+        $this->eventDispatcher = $this->container->get(EventDispatcher::class);
+        $this->eventDispatcher->dispatch('framework.before-register');
 
         foreach ($this->config as $key => $value) {
             $this->container->setParameter($key, $value);
         }
 
-        $bootCallable = [];
+        foreach ($this->serviceProviders as $i => $serviceProvider) {
+            $this->serviceProviders[$i] = $this->container->get($serviceProvider);
+
+            $this->serviceProviders[$i]->register($this->container);
+        }
+
+        $this->eventDispatcher->dispatch('framework.after-register');
+    }
+
+    public function boot(): void
+    {
+        $this->eventDispatcher->dispatch('framework.before-boot');
+
         foreach ($this->serviceProviders as $serviceProvider) {
-            if (is_callable($serviceProvider)) {
-                $serviceProvider($this->container);
-                $bootCallable[] = $serviceProvider;
-
-                continue;
-            }
-
-            $instance = $this->container->get($serviceProvider);
-            $register = [$instance, 'register'];
-            assert(is_callable($register));
-            $register($this->container);
-
-            $boot = [$instance, 'boot'];
-            assert(is_callable($boot));
-            $bootCallable[] = $boot;
+            $serviceProvider->boot();
         }
 
-        foreach ($bootCallable as $callable) {
-            $callable();
+        $this->eventDispatcher->dispatch('framework.after-boot');
+    }
+
+    public function stop(): void
+    {
+        $this->eventDispatcher->dispatch('framework.before-stop');
+
+        foreach ($this->serviceProviders as $serviceProvider) {
+            $serviceProvider->stop();
         }
 
-        /** @var RequestHandlerInterface $requestHandler */
-        $requestHandler = $this->container->get(RequestHandlerInterface::class);
-        $requestHandler->handle();
+        $this->eventDispatcher->dispatch('framework.after-stop');
     }
 }

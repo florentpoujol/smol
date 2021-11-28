@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use FlorentPoujol\SmolFramework\Framework\Framework;
+use FlorentPoujol\SmolFramework\Framework\HttpKernel;
+use FlorentPoujol\SmolFramework\Framework\SmolServiceProvider;
+use Nyholm\Psr7Server\ServerRequestCreator;
 use Swoole\HTTP\Server;
 
 $server = new Swoole\HTTP\Server('127.0.0.1', 9501);
@@ -13,14 +17,23 @@ $server->set([
     'backlog' => 128,       // TCP backlog connection number
 ]);
 
-$framework = new \FlorentPoujol\SmolFramework\Framework([
+$framework = new Framework([
     'baseAppPath' => __DIR__,
     'environment' => 'local',
+]);
+
+$framework->setServiceProviders([
+    SmolServiceProvider::class,
+    // YourAppServiceProvider::class,
 ]);
 
 // Triggered when the HTTP Server starts, connections are accepted after this callback is executed
 $server->on('Start', function (Server $server) use ($framework): void {
     echo 'Starting server... ' . PHP_EOL;
+
+    $framework->register();
+
+    $framework->getContainer()->setInstance(Server, $server);
 
     $framework->boot();
 });
@@ -30,10 +43,20 @@ $server->on('WorkerStart', function (Server $server, int $workerId): void {
     echo 'WorkerStart... ' . PHP_EOL;
 });
 
+$httpKernel = new HttpKernel($framework->getContainer());
+
+/** @var ServerRequestCreator $psrServerRequestCreator */
+$psrServerRequestCreator = $framework->getContainer()->get(ServerRequestCreator::class);
+
 // The main HTTP server request callback event, entry point for all incoming HTTP requests
-$server->on('Request', function (Reqeust $request, Response $response) {
-    $handler = new SwooleRequestHandler(Container, $request, $response);
-    $handler->handle();
+$server->on('Request', function (SwooleRequest $swooleRequest, SwooleResponse $swooleResponse) use ($psrServerRequestCreator, $httpKernel): void {
+    // turn swoole request to array and get get psr server resquest
+    $psrServerRequest = $psrServerRequestCreator->fromArrays([], [], [],[], [], [], []);
+
+    $psrResponse = $httpKernel->handle($psrServerRequest);
+
+    // seed swoole response from psr respnose
+    $swooleResponse->send($psrResponse->getBody()->getContents());
 });
 
 // Triggered when worker processes are being stopped
@@ -43,7 +66,7 @@ $server->on('WorkerStop', function (Server $server, int $workerId): void {
 
 // Triggered when the server is shutting down
 $server->on('Shutdown', function (Server $server, int $workerId): void {
-    $framework->cleanUp();
+    $framework->stop();
     echo 'Shutdown server... ' . PHP_EOL;
 });
 
