@@ -145,6 +145,48 @@ final class DateTime extends \DateTime
     }
 
     // --------------------------------------------------
+    // add*WithoutOverflow
+
+    /**
+     * Add the provided number of months, but without changing the current day
+     */
+    public function addMonthsWithoutOverflow(int $months): self
+    {
+        $year = $this->getYear();
+        $month = $this->getMonth() + $months;
+
+        if ($month > 12) {
+            $diffYear = (int) ($month / 12);
+            $year += $diffYear;
+            $month -= $diffYear * 12;
+        }
+
+        $day = $this->getDay();
+        if ($day >= 29) {
+            $day = min($day, (int) date('t', strtotime("$year-$month-01")));
+        }
+
+        $this->setDate($year, $month, $day);
+
+        return $this;
+    }
+
+    public function addYearsWithoutOverflow(int $years): self
+    {
+        $year = $this->getYear() + $years;
+
+        $day = $this->getDay();
+        if ($day >= 29) {
+            $month = $this->getMonth();
+            $day = min($day, (int) date('t', strtotime("$year-$month-01")));
+        }
+
+        $this->setDate($year, $month, $day);
+
+        return $this;
+    }
+
+    // --------------------------------------------------
     // sub
 
     public function subMicroSeconds(int $microSeconds): self
@@ -192,6 +234,45 @@ final class DateTime extends \DateTime
     public function subYears(int $years): self
     {
         $this->modify("- $years years");
+
+        return $this;
+    }
+
+    // --------------------------------------------------
+    // sub*WithoutOverflow
+
+    public function subMonthsWithoutOverflow(int $months): self
+    {
+        $year = $this->getYear();
+        $month = $this->getMonth() - $months;
+
+        if ($month > 12) {
+            $diffYear = (int) ($month / 12);
+            $year -= $diffYear;
+            $month -= $diffYear * 12;
+        }
+
+        $day = $this->getDay();
+        if ($day >= 29) {
+            $day = min($day, (int) date('t', strtotime("$year-$month-01")));
+        }
+
+        $this->setDate($year, $month, $day);
+
+        return $this;
+    }
+
+    public function subYearsWithoutOverflow(int $years): self
+    {
+        $year = $this->getYear() - $years;
+        $month = $this->getMonth();
+
+        $day = $this->getDay();
+        if ($day >= 29) {
+            $day = min($day, (int) date('t', strtotime("$year-$month-01")));
+        }
+
+        $this->setDate($year, $month, $day);
 
         return $this;
     }
