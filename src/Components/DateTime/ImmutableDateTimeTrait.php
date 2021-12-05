@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Components\DateTime;
 
 use DateTimeInterface;
+use DateTimeZone;
 
 /**
- * Methods that do not change the state of the DateTime objects, shared with both the mutable and immutable datetimes
+ * Methods that do not change the state of the DateTime object, shared with both the mutable and immutable datetimes.
  */
 trait ImmutableDateTimeTrait
 {
@@ -80,6 +81,28 @@ trait ImmutableDateTimeTrait
         return $absolute ? abs($diff) : $diff;
     }
 
+    public function diffInMonths(DateTimeInterface $other, bool $absolute = false): int
+    {
+        $diff = $this->diff($other);
+
+        if (! $absolute && $diff->invert) {
+            return -$diff->m;
+        }
+
+        return $diff->m;
+    }
+
+    public function diffInYears(DateTimeInterface $other, bool $absolute = false): int
+    {
+        $diff = $this->diff($other);
+
+        if (! $absolute && $diff->invert) {
+            return -$diff->y;
+        }
+
+        return $diff->y;
+    }
+
     // --------------------------------------------------
     // is
 
@@ -108,17 +131,17 @@ trait ImmutableDateTimeTrait
 
     public function isCurrentMinute(): bool
     {
-        return $this->format('YmdHi') === date('YmdHi');
+        return (int) ($this->getTimestamp() / 60) === (int) (time() / 60);
     }
 
     public function isCurrentHour(): bool
     {
-        return $this->format('YmdH') === date('YmdH');
+        return (int) ($this->getTimestamp() / 3600) === (int) (time() / 3600);
     }
 
     public function isCurrentDay(): bool
     {
-        return $this->format('Ymd') === date('Ymd');
+        return (int) ($this->getTimestamp() / 86400) === (int) (time() / 86400);
     }
 
     public function isCurrentMonth(): bool
@@ -184,19 +207,26 @@ trait ImmutableDateTimeTrait
         return $this->format('Y') === $year->format('Y');
     }
 
-    /*
-    * microseconds
-    * seconds
-    * minutes
-    * hours
-    * days
-    * month
-    * years
-    *
-    * add*WithoutOverflow
-    * sub*WithoutOverflow
-    *
-    * isNext
-    * isLast
-    */
+    // --------------------------------------------------
+    //
+
+    public function toDateString(): string
+    {
+        return $this->format('Y-m-d');
+    }
+
+    public function toDateTimeString(): string
+    {
+        return $this->format('Y-m-d H:i:s');
+    }
+
+    public function toIso8601String(): string
+    {
+        return $this->format('c');
+    }
+
+    public function toIso8601ZuluString(): string
+    {
+        return $this->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+    }
 }
