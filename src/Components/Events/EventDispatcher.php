@@ -94,7 +94,7 @@ final class EventDispatcher
 
         $events = $subscriber::getSubscribedEvents();
 
-        $subscriberIsString = is_object($subscriber);
+        $subscriberIsString = is_string($subscriber);
 
         foreach ($events as $eventName => $method) {
             if (is_string($method) && method_exists($subscriber, $method)) {
@@ -132,7 +132,7 @@ final class EventDispatcher
     public function dispatch(object|string $event, mixed $data = null): void
     {
         $eventIsObject = is_object($event);
-        $eventName = $eventIsObject ? get_class($event) : $event;
+        $eventName = $eventIsObject ? $event::class : $event;
 
         if (! isset($this->listeners[$eventName])) {
             return;

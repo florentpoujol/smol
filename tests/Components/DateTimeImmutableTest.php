@@ -82,7 +82,7 @@ final class DateTimeImmutableTest extends TestCase
         $year = (int) date('Y');
         $now = date('Y-m-d H:i:s');
 
-        $year -= 1;
+        --$year;
         self::assertTrue((new DateTimeImmutable("$year-12-05 19:12:13.123456"))->isPast());
         $year += 2;
         self::assertFalse((new DateTimeImmutable("$year-12-05 19:12:13.123456"))->isPast());

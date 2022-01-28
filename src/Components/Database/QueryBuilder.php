@@ -74,7 +74,7 @@ final class QueryBuilder
     /** @var array<string> */
     private array $rawSelects = [];
 
-    public function selectRaw(srting $rawSelect): self
+    public function selectRaw(string $rawSelect): self
     {
         $this->rawSelects[] = $rawSelect;
 
@@ -234,9 +234,11 @@ final class QueryBuilder
     public function count(): int
     {
         // calling selectMany() here since selectSingle() add a LIMIT clause
-        return (int) ($this
-            ->selectRaw('COUNT(*)')
-            ->selectMany()[0]['COUNT(*)'] ?? 0);
+        return (int) (
+            $this
+                ->selectRaw('COUNT(*)')
+                ->selectMany()[0]['COUNT(*)'] ?? 0
+        );
     }
 
     public function exists(): bool
@@ -394,7 +396,7 @@ final class QueryBuilder
                 break;
 
             default:
-                throw new SmolFrameworkException("PDO driver '$driver' doesn't support UPSERT, or the framework hasn't implemented it.");
+                throw new SmolFrameworkException("PDO driver '$driver' doesn't support UPSERT, or the it hasn't been implemented.");
         }
 
         return $sql;
@@ -903,7 +905,7 @@ final class QueryBuilder
     }
 
     // --------------------------------------------------
-    // limit offset
+    // limit / offset
 
     private string $limit = '';
 

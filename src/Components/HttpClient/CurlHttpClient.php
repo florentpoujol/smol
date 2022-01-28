@@ -97,7 +97,7 @@ final class CurlHttpClient implements ClientInterface
         curl_close($curlHandle);
 
         if (! is_string($body)) {
-            $this->handleFailedRequest($request);
+            throw (new RequestException())->setRequest($request);
         }
 
         $headersAsString = curl_getinfo($curlHandle, CURLINFO_HEADER_OUT);
@@ -157,13 +157,5 @@ final class CurlHttpClient implements ClientInterface
         }
 
         $this->options[CURLOPT_HTTPHEADER] = $headers;
-    }
-
-    /**
-     * @return never-return
-     */
-    private function handleFailedRequest(RequestInterface $request): void
-    {
-        throw (new RequestException())->setRequest($request);
     }
 }

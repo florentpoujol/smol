@@ -98,7 +98,7 @@ final class Container implements ContainerInterface
 
         if (isset($this->singletonBindings[$id])) {
             $this->instances[$id] = $concrete;
-            $this->instances[get_class($concrete)] = $concrete;
+            $this->instances[$concrete::class] = $concrete;
         }
 
         return $concrete;

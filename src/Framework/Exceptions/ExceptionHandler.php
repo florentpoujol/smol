@@ -32,7 +32,7 @@ final class ExceptionHandler
 
     public function report(Throwable $exception): void
     {
-        $message = get_class($exception) . ': ' . $exception->getMessage();
+        $message = $exception::class . ': ' . $exception->getMessage();
         $context = [
             'code' => $exception->getCode(),
             'file' => $exception->getFile(),

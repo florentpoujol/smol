@@ -97,7 +97,7 @@ final class LocalFileSystem implements FileSystemInterface
             $contents = [];
             /** @var SplFileInfo $fileInfo */
             foreach ($rii as $fileInfo) {
-                if ($fileInfo->isDir()){
+                if ($fileInfo->isDir()) {
                     continue;
                 }
 

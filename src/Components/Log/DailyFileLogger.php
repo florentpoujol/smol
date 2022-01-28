@@ -19,7 +19,7 @@ final class DailyFileLogger extends AbstractLogger
      *
      * @param array<string, mixed> $context
      */
-    // @phpstan-ignore-next-line ($param context without type specified, but if we specify one, it complains it is not covariant
+    // @phpstan-ignore-next-line (param $context without type specified, but if we specify one, it complains it is not covariant
     public function log($level, Stringable|string $message, array $context = []): void
     {
         $date = date('Y-m-d');

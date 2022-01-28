@@ -14,6 +14,9 @@ use UnexpectedValueException;
 
 abstract class Entity
 {
+    /**
+     * @param array<string, mixed> $array
+     */
     public static function fromArray(array $array, bool $throwOnMissingProperty = true, bool $validate = true): static
     {
         $instance = new static();
@@ -54,7 +57,7 @@ abstract class Entity
                 }
 
                 if (in_array(self::class, class_parents($typeName), true)) {
-                    /** @var class-string<self> $typeName */
+                    /* @var class-string<self> $typeName */
                     $instance->{$key} = $typeName::fromArray($value, $throwOnMissingProperty);
                     $instance->_properties[$key] = true;
 

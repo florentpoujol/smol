@@ -148,7 +148,7 @@ final class DateTime extends \DateTime
     // add*WithoutOverflow
 
     /**
-     * Add the provided number of months, but without changing the current day
+     * Add the provided number of months, but without changing the current day.
      */
     public function addMonthsWithoutOverflow(int $months): self
     {

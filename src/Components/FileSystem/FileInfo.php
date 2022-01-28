@@ -24,7 +24,7 @@ final class FileInfo
     }
 
     /**
-     * @return array<int|string>
+     * @return array<string, int|string>
      */
     public function getMetadata(): array
     {

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Framework;
 
 use FlorentPoujol\SmolFramework\Framework\Translations\TranslationsRepository;
+use RuntimeException;
+use Throwable;
 
 if (! function_exists('\FlorentPoujol\SmolFramework\Framework\env')) {
     function env(string $key, mixed $default = null): mixed
@@ -90,5 +92,31 @@ if (! function_exists('\FlorentPoujol\SmolFramework\Framework\read_environment_f
 
             putenv("$key=$value");
         }
+    }
+}
+
+/**
+ * @return void|never-return
+ */
+function throwIf(bool $condition, callable|string|Throwable $exception): void
+{
+    assert($condition);
+
+    if (! $condition) {
+        if (is_callable($exception)) {
+            $exception();
+
+            return;
+        }
+
+        if ($exception instanceof Throwable) {
+            throw $exception;
+        }
+
+        if (class_exists($exception)) {
+            throw new $exception();
+        }
+
+        throw new RuntimeException($exception);
     }
 }

@@ -147,7 +147,7 @@ final class Validator
 
                 if ($rule instanceof RuleInterface) {
                     if (! $rule->passes($key, $this->getValue($key))) {
-                        $this->addMessage($key, $rule->getMessage($key), basename(get_class($rule)));
+                        $this->addMessage($key, $rule->getMessage($key), basename($rule::class));
                     }
 
                     continue;

@@ -8,7 +8,7 @@ use FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException;
 
 final class Router
 {
-    /** @var array<string, array<string, array<\FlorentPoujol\SmolFramework\Framework\Http\Route>>> Routes instances by HTTP methods and prefixes */
+    /** @var array<string, array<string, array<Route>>> Routes instances by HTTP methods and prefixes */
     private array $routes = [
         // HTTP method => [
         //     /prefix => [
@@ -18,7 +18,7 @@ final class Router
         // ]
     ];
 
-    /** @var array<string, \FlorentPoujol\SmolFramework\Framework\Http\Route> */
+    /** @var array<string, Route> */
     private array $routesByName = [];
 
     public function __construct(
@@ -28,7 +28,7 @@ final class Router
     }
 
     /**
-     * @throws \FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException When no route with that name is found
+     * @throws SmolFrameworkException When no route with that name is found
      */
     public function getRouteByName(string $name): Route
     {
@@ -65,9 +65,9 @@ final class Router
                 continue;
             }
 
-            // we found all routes which prefix match the current URI
-            // now we need to find which route actually match the whole URI
-            // even if there is a single route, it does not mean it match
+            // We found all routes which prefix match the current URI,
+            // now we need to find which route actually match the whole URI.
+            // Even if there is a single route, it does not mean it match.
             foreach ($routes as $route) {
                 if ($route->match($uri)) {
                     return $route;
@@ -99,7 +99,7 @@ final class Router
 
             $routes = require $this->baseAppPath . '/routes/' . $path;
 
-            /** @var \FlorentPoujol\SmolFramework\Framework\Http\Route $route */
+            /** @var Route $route */
             foreach ($routes as $route) {
                 if ($route->getName() !== null) {
                     $this->routesByName[$route->getName()] = $route; // used for URL generation

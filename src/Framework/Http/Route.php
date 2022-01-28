@@ -107,7 +107,7 @@ final class Route
             return true;
         }
 
-        // since the exact comparison doesn't match, this route is either complitely different
+        // since the exact comparison doesn't match, this route is either completely different
         // or more likely has the same prefix (since the router only call match() for routes with a matching prefix), but has regex segments
 
         $this->buildRegexUri();
@@ -145,13 +145,13 @@ final class Route
     // --------------------------------------------------
     // middleware stuffs
 
-    /** @var array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>> */
+    /** @var array<callable|string|class-string<MiddlewareInterface>> */
     private array $middleware = [];
 
     /**
      * Add one **or several** middleware.
      *
-     * @param array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>> $middleware
+     * @param array<callable|string|class-string<MiddlewareInterface>> $middleware
      */
     public function setMiddleware(array $middleware): self
     {
@@ -161,7 +161,7 @@ final class Route
     }
 
     /**
-     * @return array<callable|string|class-string<\Psr\Http\Server\MiddlewareInterface>>
+     * @return array<callable|string|class-string<MiddlewareInterface>>
      */
     public function getMiddleware(): array
     {
@@ -175,7 +175,7 @@ final class Route
         return
             is_string($mid)
             && class_exists($mid)
-            && is_array(class_implements($mid))
-            && in_array(MiddlewareInterface::class, class_implements($mid), true);
+            && is_array($interfaces = class_implements($mid))
+            && in_array(MiddlewareInterface::class, $interfaces, true);
     }
 }
