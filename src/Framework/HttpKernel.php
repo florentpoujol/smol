@@ -157,15 +157,4 @@ final class HttpKernel
             ...$route->getActionArguments() // this unpacks an assoc array and make use of named arguments to inject the proper value taken from the URI segments to the correct argument
         );
     }
-
-    // --------------------------------------------------
-
-    public function register(Container $container): void
-    {
-    }
-
-    public function boot(): void
-    {
-        // nothing to do
-    }
 }

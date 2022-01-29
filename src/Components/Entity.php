@@ -7,12 +7,13 @@ namespace FlorentPoujol\SmolFramework\Components;
 use Error;
 use FlorentPoujol\SmolFramework\Components\Validation\ValidationException;
 use FlorentPoujol\SmolFramework\Components\Validation\Validator;
+use JsonSerializable;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionProperty;
 use UnexpectedValueException;
 
-abstract class Entity
+abstract class Entity implements JsonSerializable
 {
     /**
      * @param array<string, mixed> $array
@@ -33,6 +34,7 @@ abstract class Entity
 
             $instance->_properties[$key] = false;
 
+            // TODO : support setters, and tests if private properties in children are accessibles
             if (! is_array($value)) {
                 $instance->{$key} = $value;
 
@@ -106,10 +108,11 @@ abstract class Entity
                 ->throwIfNotValid();
         }
 
+        // now access all properties, even the one that are not validated so that an Error is thrown on uninitialized typed properties
         if ($this->_properties !== []) {
             foreach ($this->_properties as $propertyName => $isStruct) {
                 try {
-                    $this->{$propertyName}; // this will throw an Error if this is an uninitialized type property, this is what we want
+                    $this->{$propertyName};
                 } catch (Error $error) {
                     throw new ValidationException($this, [$propertyName => [$error->getMessage()]]);
                 }
@@ -122,7 +125,7 @@ abstract class Entity
             return;
         }
 
-        // if the Struct wasn't hydrated through fromArray(), resort to reflection here to loop on all properties and recursively validate
+        // if the entity wasn't hydrated through fromArray(), resort to reflection here to loop on all properties and recursively validate
 
         $reflProperties = (new ReflectionClass($this))->getProperties();
         foreach ($reflProperties as $reflProperty) {
@@ -143,12 +146,32 @@ abstract class Entity
             }
 
             $reflType = $reflProperty->getType();
-            if (
-                $reflType instanceof ReflectionNamedType
-                && in_array(self::class, class_parents($reflType->getName()), true)
-            ) {
-                $this->{$propertyName}->validate();
+            if ($reflType instanceof ReflectionNamedType) {
+                $classParents = class_parents($reflType->getName());
+                assert(is_array($classParents));
+
+                if (in_array(self::class, $classParents, true)) {
+                    $this->{$propertyName}->validate();
+                }
             }
         }
+    }
+
+    // --------------------------------------------------
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return get_object_vars($this); // TODO support getters
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return get_object_vars($this); // TODO test effect of returning $this directly ?
     }
 }

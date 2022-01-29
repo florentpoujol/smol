@@ -39,7 +39,7 @@ Per the feature list, Smol is not a micro-framework that basically only provide 
 **Lean**
 
 We believe that when building a resilient modern application, we should strive to reduce to a minimum
-- the dependencies to third-party Composer packages
+- the dependencies to third-party Composer packages and non-core PHP extensions
 - the total amount of code that the application has (including dependencies)
 - the amount of code that actually run, that the number of methods calls and object instanciation is a metric that matter
 
@@ -68,13 +68,13 @@ As for development, the framework integrates with the PHP Debugbar, Ignition and
 - web stuffs
 	- router + route definitions in files
 	- callable or class-based controllers
-	- laravel-like middleware
+	- callable or PSR-15 middleware
 	- request / response objects
 	- body validation
-	- twig-like views
+	- views and a template language that support a subset of Twig
 	- cookies
-	- http sessions
-	- url generation
+	- HTTP sessions
+	- Url generation
 	- HTTP client
 
 - Other
@@ -87,7 +87,7 @@ As for development, the framework integrates with the PHP Debugbar, Ignition and
 	- general exception handling, with built-in whoops
 	- PSR3/Monolog compatible log system
 	- built-in support for http proxies
-	- email
+	- SMTP email
 	- basic queues
 	- simple query builder or even simple DataMapper ORM
 	- built-in way to run as a long-running server with Swoole
