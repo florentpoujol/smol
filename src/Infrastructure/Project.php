@@ -7,7 +7,7 @@ namespace FlorentPoujol\Smol\Infrastructure;
 use FlorentPoujol\Smol\Components\Container\Container;
 use FlorentPoujol\Smol\Components\Events\EventDispatcher;
 
-final class Framework
+final class Project
 {
     private static self $instance;
 

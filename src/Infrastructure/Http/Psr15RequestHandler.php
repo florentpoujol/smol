@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Infrastructure\Http;
 
-use FlorentPoujol\Smol\Infrastructure\Framework;
+use FlorentPoujol\Smol\Infrastructure\Project;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -15,8 +15,8 @@ final class Psr15RequestHandler implements RequestHandlerInterface
     private array $middleware;
 
     public function __construct(
-        private Route $route,
-        private Framework $framework,
+        private Route   $route,
+        private Project $framework,
     ) {
         $this->middleware = $route->getMiddleware(); // @phpstan-ignore-line
     }
@@ -56,7 +56,7 @@ final class Psr15RequestHandler implements RequestHandlerInterface
         return $this->route;
     }
 
-    public function getFramework(): Framework
+    public function getFramework(): Project
     {
         return $this->framework;
     }

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\Smol\Infrastructure\Framework;
 use FlorentPoujol\Smol\Infrastructure\HttpKernel;
+use FlorentPoujol\Smol\Infrastructure\Project;
 use FlorentPoujol\Smol\Infrastructure\SmolServiceProvider;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -11,7 +11,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 // \FlorentPoujol\Smol\Framework\read_environment_file(__DIR__ . '/../.env');
 
-$framework = Framework::make(__DIR__ . '/..');
+$framework = Project::make(__DIR__ . '/..');
 
 // --------------------------------------------------
 // register service providers and/or do other init steps

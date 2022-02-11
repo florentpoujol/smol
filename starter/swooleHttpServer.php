@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\Smol\Infrastructure\Framework;
 use FlorentPoujol\Smol\Infrastructure\HttpKernel;
+use FlorentPoujol\Smol\Infrastructure\Project;
 use FlorentPoujol\Smol\Infrastructure\SmolServiceProvider;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Swoole\HTTP\Server;
@@ -17,7 +17,7 @@ $server->set([
     'backlog' => 128,       // TCP backlog connection number
 ]);
 
-$framework = new Framework([
+$framework = new Project([
     'baseAppPath' => __DIR__,
     'environment' => 'local',
 ]);

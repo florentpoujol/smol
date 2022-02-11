@@ -31,7 +31,7 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\__')) {
     function __(string $key, array $templateReplacements = []): string
     {
         /** @var TranslationsRepository $translationRepository */
-        $translationRepository = Framework::getInstance()
+        $translationRepository = Project::getInstance()
             ->getContainer()
             ->get(TranslationsRepository::class);
 
