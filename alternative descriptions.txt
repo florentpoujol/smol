@@ -1,9 +1,0 @@
-alternative descriptions
-
-
-
-Smol is a set of components and a framework which main caracteristics is to be small.
-
-They have by default no dependencies, either from PHP extensions or composer packages.
-
-As you might expect, you can not do anything with them, but you can do most things.

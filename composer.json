@@ -1,8 +1,8 @@
 {
-    "name": "florentpoujol/smol-framework",
+    "name": "florentpoujol/smol",
     "license": "MIT",
     "type": "project",
-    "description": "A lean but full-featured framework for PHP 8.1+",
+    "description": "A set of small but straight-forward components and infrastructure to create modern PHP8.1+ projects",
     "autoload": {
         "files": [
           "src/Infrastructure/helpers.php"
