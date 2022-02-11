@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\Validation\RuleInterface;
-use FlorentPoujol\SmolFramework\Components\Validation\Validator;
+use FlorentPoujol\Smol\Components\Validation\RuleInterface;
+use FlorentPoujol\Smol\Components\Validation\Validator;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use stdClass;

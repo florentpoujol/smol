@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components\Cache;
+namespace FlorentPoujol\Smol\Tests\Components\Cache;
 
-use FlorentPoujol\SmolFramework\Components\Cache\DatabaseCache;
-use FlorentPoujol\SmolFramework\Components\Database\QueryBuilder;
+use FlorentPoujol\Smol\Components\Cache\DatabaseCache;
+use FlorentPoujol\Smol\Components\Database\QueryBuilder;
 use PDO;
 use PHPUnit\Framework\TestCase;
 

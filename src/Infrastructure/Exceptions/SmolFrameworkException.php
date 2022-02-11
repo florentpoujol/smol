@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure\Exceptions;
+namespace FlorentPoujol\Smol\Infrastructure\Exceptions;
 
-final class SmolFrameworkException extends \Exception
+final class SmolException extends \Exception
 {
 }

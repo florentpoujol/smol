@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\HttpClient;
+namespace FlorentPoujol\Smol\Components\HttpClient;
 
 final class ClientException extends AbstractHttpException
 {

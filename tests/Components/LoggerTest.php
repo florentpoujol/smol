@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\Log\DailyFileLogger;
+use FlorentPoujol\Smol\Components\Log\DailyFileLogger;
 use PHPUnit\Framework\TestCase;
 
 final class LoggerTest extends TestCase

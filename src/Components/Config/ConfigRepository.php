@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Config;
+namespace FlorentPoujol\Smol\Components\Config;
 
 final class ConfigRepository
 {

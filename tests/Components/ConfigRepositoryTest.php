@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
+use FlorentPoujol\Smol\Components\Config\ConfigRepository;
 use PHPUnit\Framework\TestCase;
-use function FlorentPoujol\SmolFramework\Infrastructure\env;
-use function FlorentPoujol\SmolFramework\Infrastructure\read_environment_file;
+use function FlorentPoujol\Smol\Infrastructure\env;
+use function FlorentPoujol\Smol\Infrastructure\read_environment_file;
 
 final class ConfigRepositoryTest extends TestCase
 {

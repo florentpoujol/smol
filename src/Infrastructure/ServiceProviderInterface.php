@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure;
+namespace FlorentPoujol\Smol\Infrastructure;
 
-use FlorentPoujol\SmolFramework\Components\Container\Container;
+use FlorentPoujol\Smol\Components\Container\Container;
 
 interface ServiceProviderInterface
 {

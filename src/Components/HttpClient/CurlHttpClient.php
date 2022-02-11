@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\HttpClient;
+namespace FlorentPoujol\Smol\Components\HttpClient;
 
 use CurlHandle;
-use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
+use FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException;
 use Nyholm\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -58,7 +58,7 @@ final class CurlHttpClient implements ClientInterface
         $uri = (string) $request->getUri();
         $curlHandle = curl_init($uri);
         if (! ($curlHandle instanceof CurlHandle)) {
-            throw new SmolFrameworkException("Couldn't create the CURL handle for uri '$uri'.");
+            throw new SmolException("Couldn't create the CURL handle for uri '$uri'.");
         }
         $this->curlHandle = $curlHandle;
 
@@ -66,7 +66,7 @@ final class CurlHttpClient implements ClientInterface
 
         $success = curl_setopt_array($curlHandle, $this->options);
         if (! $success) {
-            throw new SmolFrameworkException('Some CURL options could not be set.');
+            throw new SmolException('Some CURL options could not be set.');
         }
 
         if (

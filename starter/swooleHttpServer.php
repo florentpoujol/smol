@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SmolFramework\Infrastructure\Framework;
-use FlorentPoujol\SmolFramework\Infrastructure\HttpKernel;
-use FlorentPoujol\SmolFramework\Infrastructure\SmolServiceProvider;
+use FlorentPoujol\Smol\Infrastructure\Framework;
+use FlorentPoujol\Smol\Infrastructure\HttpKernel;
+use FlorentPoujol\Smol\Infrastructure\SmolServiceProvider;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Swoole\HTTP\Server;
 

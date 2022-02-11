@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\FileSystem;
+namespace FlorentPoujol\Smol\Components\FileSystem;
 
 use FTP\Connection;
 use RecursiveDirectoryIterator;

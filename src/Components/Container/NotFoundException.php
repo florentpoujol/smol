@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Container;
+namespace FlorentPoujol\Smol\Components\Container;
 
 final class NotFoundException extends ContainerException
 {

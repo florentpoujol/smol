@@ -14,7 +14,7 @@ A sliding window **ends at the current hit** (inclusive) and takes into accounts
 
 ## Setup
 
-To get a rate limiter instance, typehint an argument against `\FlorentPoujol\SmolFramework\RateLimiter\CacheRateLimiter`, then setup it, either from values coming from the config with the `setupFromConfig(string $configKey): void` method, or directly with the `setup(string $name, int $maxHits, int $windowSizeInSeconds, bool $windowIsSliding = false): void` method.
+To get a rate limiter instance, typehint an argument against `\FlorentPoujol\Smol\RateLimiter\CacheRateLimiter`, then setup it, either from values coming from the config with the `setupFromConfig(string $configKey): void` method, or directly with the `setup(string $name, int $maxHits, int $windowSizeInSeconds, bool $windowIsSliding = false): void` method.
 
 Examples:
 ```php

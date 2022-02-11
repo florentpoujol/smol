@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\HttpClient;
+namespace FlorentPoujol\Smol\Components\HttpClient;
 
 use Exception;
 use Psr\Http\Client\ClientExceptionInterface;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure;
+namespace FlorentPoujol\Smol\Infrastructure;
 
-use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
-use FlorentPoujol\SmolFramework\Components\Container\Container;
-use FlorentPoujol\SmolFramework\Components\Log\ResourceLogger;
-use FlorentPoujol\SmolFramework\Infrastructure\Http\Psr15RequestHandler;
-use FlorentPoujol\SmolFramework\Infrastructure\Http\ServerRequest;
+use FlorentPoujol\Smol\Components\Config\ConfigRepository;
+use FlorentPoujol\Smol\Components\Container\Container;
+use FlorentPoujol\Smol\Components\Log\ResourceLogger;
+use FlorentPoujol\Smol\Infrastructure\Http\Psr15RequestHandler;
+use FlorentPoujol\Smol\Infrastructure\Http\ServerRequest;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Request;
 use Nyholm\Psr7\Response;

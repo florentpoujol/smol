@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure\Exceptions;
+namespace FlorentPoujol\Smol\Infrastructure\Exceptions;
 
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;

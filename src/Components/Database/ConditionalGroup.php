@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Database;
+namespace FlorentPoujol\Smol\Components\Database;
 
 final class ConditionalGroup
 {

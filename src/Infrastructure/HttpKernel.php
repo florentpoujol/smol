@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure;
+namespace FlorentPoujol\Smol\Infrastructure;
 
-use FlorentPoujol\SmolFramework\Components\Container\Container;
-use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\ExceptionHandler;
-use FlorentPoujol\SmolFramework\Infrastructure\Http\Route;
-use FlorentPoujol\SmolFramework\Infrastructure\Http\Router;
+use FlorentPoujol\Smol\Components\Container\Container;
+use FlorentPoujol\Smol\Infrastructure\Exceptions\ExceptionHandler;
+use FlorentPoujol\Smol\Infrastructure\Http\Route;
+use FlorentPoujol\Smol\Infrastructure\Http\Router;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -1,6 +1,6 @@
 # Dependency Injection Container
 
-`\FlorentPoujol\SmolFramework\Container\Container` is a PSR-11 container.
+`\FlorentPoujol\Smol\Container\Container` is a PSR-11 container.
 
 The two main uses of a DI Container is to return a working object instance when asked for an interface, as well as autowiring (automatically filling) constructor arguments when instantiating a new instance.
 
@@ -10,7 +10,7 @@ Pass the interface and the concrete class fuly qualified class anmes to the `set
 
 Example: 
 ```php
-$container->setFactory(\Psr\Log\LoggerInterface::class, \FlorentPoujol\SmolFramework\Log\DailyFileLogger::class);
+$container->setFactory(\Psr\Log\LoggerInterface::class, \FlorentPoujol\Smol\Log\DailyFileLogger::class);
 ```
 
 In your controller, you can typehint the constructor for the `LoggerInterface`, you will receive a `DailyFileLogger` instance.

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SmolFramework\Infrastructure\Framework;
-use FlorentPoujol\SmolFramework\Infrastructure\HttpKernel;
-use FlorentPoujol\SmolFramework\Infrastructure\SmolServiceProvider;
+use FlorentPoujol\Smol\Infrastructure\Framework;
+use FlorentPoujol\Smol\Infrastructure\HttpKernel;
+use FlorentPoujol\Smol\Infrastructure\SmolServiceProvider;
 use Psr\Http\Message\ServerRequestInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// \FlorentPoujol\SmolFramework\Framework\read_environment_file(__DIR__ . '/../.env');
+// \FlorentPoujol\Smol\Framework\read_environment_file(__DIR__ . '/../.env');
 
 $framework = Framework::make(__DIR__ . '/..');
 

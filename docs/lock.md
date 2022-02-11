@@ -12,7 +12,7 @@ Or the lock is automatically released after some time to prevent a **dead lock**
 
 The CacheLock service writes the lock in the default cache service.
 
-To create a lock, you typically would typehint againts the `\FlorentPoujol\SmolFramework\Lock\CacheLockFactory` then call the `make(string $name, int $ttlInSeconds): CacheLock` on it.  
+To create a lock, you typically would typehint againts the `\FlorentPoujol\Smol\Lock\CacheLockFactory` then call the `make(string $name, int $ttlInSeconds): CacheLock` on it.  
 Or you can typehint for any cache backend and instantiate directly the service : `new CacheLock(string $name, int $ttlInSeconds, CacheInterface $cache)`
 
 The name is the unique value that identifies the lock.    

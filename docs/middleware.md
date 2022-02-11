@@ -42,7 +42,7 @@ return array_map(
 
 Not much to say here beside they are autowired when instantiated.
 
-As handler, they are passed an instance of `\FlorentPoujol\SmolFramework\Psr15RequestHandler`, from which you can easily fetch the resolved route instance, or even the framework instance.
+As handler, they are passed an instance of `\FlorentPoujol\Smol\Psr15RequestHandler`, from which you can easily fetch the resolved route instance, or even the framework instance.
 
 ## Callable middleware
 

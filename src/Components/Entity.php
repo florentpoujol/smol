@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components;
+namespace FlorentPoujol\Smol\Components;
 
 use Error;
-use FlorentPoujol\SmolFramework\Components\Validation\ValidationException;
-use FlorentPoujol\SmolFramework\Components\Validation\Validator;
+use FlorentPoujol\Smol\Components\Validation\ValidationException;
+use FlorentPoujol\Smol\Components\Validation\Validator;
 use JsonSerializable;
 use ReflectionClass;
 use ReflectionNamedType;

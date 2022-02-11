@@ -75,7 +75,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolDocs\Http;
 
-use FlorentPoujol\SmolFramework\ViewRenderer;
+use FlorentPoujol\Smol\ViewRenderer;
 use Nyholm\Psr7\Response;
 
 final class Controller

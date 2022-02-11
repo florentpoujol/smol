@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Cache;
+namespace FlorentPoujol\Smol\Components\Cache;
 
-use FlorentPoujol\SmolFramework\Components\Database\QueryBuilder;
+use FlorentPoujol\Smol\Components\Database\QueryBuilder;
 
 final class DatabaseCache implements CacheInterface
 {

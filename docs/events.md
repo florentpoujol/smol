@@ -1,6 +1,6 @@
 # Events
 
-`\FlorentPoujol\SmolFramework\Events\EventDispatcher` is a PSR-14 event dispatcher.
+`\FlorentPoujol\Smol\Events\EventDispatcher` is a PSR-14 event dispatcher.
 
 ## Dispatching events
 

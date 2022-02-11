@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components;
+namespace FlorentPoujol\Smol\Components;
 
-use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
+use FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException;
 
 final class ViewRenderer
 {
@@ -29,7 +29,7 @@ final class ViewRenderer
         }
 
         if (! file_exists($viewPath)) {
-            throw new SmolFrameworkException("Couldn't find view '$originalViewPath' in path '$this->baseAppPath/views/'.");
+            throw new SmolException("Couldn't find view '$originalViewPath' in path '$this->baseAppPath/views/'.");
         }
 
         if (str_ends_with($viewPath, '.smol.php')) {
@@ -42,7 +42,7 @@ final class ViewRenderer
         require $viewPath;
         $viewContent = ob_get_clean();
         if (! is_string($viewContent)) {
-            throw new SmolFrameworkException("Couldn't get buffer output from view at path '$viewPath'.");
+            throw new SmolException("Couldn't get buffer output from view at path '$viewPath'.");
         }
 
         return $viewContent;
@@ -52,7 +52,7 @@ final class ViewRenderer
     {
         $viewContent = file_get_contents($viewPath);
         if (! is_string($viewContent)) {
-            throw new SmolFrameworkException("Can't read view at path '$viewPath'.");
+            throw new SmolException("Can't read view at path '$viewPath'.");
         }
 
         $hash = md5($viewContent);
@@ -70,7 +70,7 @@ final class ViewRenderer
             $parentPath = "$this->baseAppPath/views/$matches[parent].smol.php";
             $parentContent = file_get_contents($parentPath);
             if (! is_string($parentContent)) {
-                throw new SmolFrameworkException("Can't read parent view at path '$parentPath'.");
+                throw new SmolException("Can't read parent view at path '$parentPath'.");
             }
 
             // first collect the content of each block in the child
@@ -125,7 +125,7 @@ final class ViewRenderer
 
         $success = file_put_contents($compiledViewPath, $viewContent);
         if ($success === false) {
-            throw new SmolFrameworkException("Couldn't write compiled view at path '$compiledViewPath'");
+            throw new SmolException("Couldn't write compiled view at path '$compiledViewPath'");
         }
 
         return $compiledViewPath;

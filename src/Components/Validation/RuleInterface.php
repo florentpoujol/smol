@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Validation;
+namespace FlorentPoujol\Smol\Components\Validation;
 
 interface RuleInterface
 {

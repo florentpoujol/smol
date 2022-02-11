@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure\Http;
+namespace FlorentPoujol\Smol\Infrastructure\Http;
 
-use FlorentPoujol\SmolFramework\Infrastructure\Framework;
+use FlorentPoujol\Smol\Infrastructure\Framework;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;

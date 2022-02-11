@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\Container\Container;
+use FlorentPoujol\Smol\Components\Container\Container;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

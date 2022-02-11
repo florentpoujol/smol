@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Database;
+namespace FlorentPoujol\Smol\Components\Database;
 
-use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
+use FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException;
 use PDO;
 use ReflectionClass;
 use ReflectionException;
@@ -101,7 +101,7 @@ final class QueryBuilder
 
         if ($rows === false) {
             $strFields = "'" . implode("', '", (array) $fields) . "'";
-            throw new SmolFrameworkException("Select request for fields $strFields could not be performed.");
+            throw new SmolException("Select request for fields $strFields could not be performed.");
         }
 
         if ($rows === []) {
@@ -292,7 +292,7 @@ final class QueryBuilder
     private function buildInsertQueryString(): string
     {
         if ($this->fields === []) {
-            throw new SmolFrameworkException('No field is set for INSERT action');
+            throw new SmolException('No field is set for INSERT action');
         }
 
         $fields = $this->fields;
@@ -342,7 +342,7 @@ final class QueryBuilder
     private function buildUpsertQueryString(): string
     {
         if ($this->fields === []) {
-            throw new SmolFrameworkException('No field is set for UPSERT action');
+            throw new SmolException('No field is set for UPSERT action');
         }
 
         $fields = $this->fields;
@@ -396,7 +396,7 @@ final class QueryBuilder
                 break;
 
             default:
-                throw new SmolFrameworkException("PDO driver '$driver' doesn't support UPSERT, or the it hasn't been implemented.");
+                throw new SmolException("PDO driver '$driver' doesn't support UPSERT, or the it hasn't been implemented.");
         }
 
         return $sql;
@@ -422,7 +422,7 @@ final class QueryBuilder
     private function buildUpdateQueryString(): string
     {
         if ($this->fields === []) {
-            throw new SmolFrameworkException('No field is set for UPDATE action');
+            throw new SmolException('No field is set for UPDATE action');
         }
 
         $sql = "UPDATE $this->table SET ";
@@ -490,7 +490,7 @@ final class QueryBuilder
             $str .= $joinTable . 'ON ';
 
             if (! isset($this->onClauses[$id]) || $this->onClauses[$id] === []) {
-                throw new SmolFrameworkException("Join statement without any ON clause: $joinTable");
+                throw new SmolException("Join statement without any ON clause: $joinTable");
             }
 
             $str .= $this->buildConditionalQueryString($this->onClauses[$id]) . ' ';
@@ -510,7 +510,7 @@ final class QueryBuilder
 
         $allowedJoinTypes = ['INNER', 'LEFT', 'RIGHT', 'FULL', 'FULL OUTER'];
         if (! in_array($joinType, $allowedJoinTypes, true)) {
-            throw new SmolFrameworkException("Unexpected join type '$joinType'.");
+            throw new SmolException("Unexpected join type '$joinType'.");
         }
 
         $joinType .= ' JOIN';
@@ -590,12 +590,12 @@ final class QueryBuilder
     /**
      * @return void|never-return
      *
-     * @throws \FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException
+     * @throws \FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException
      */
     private function sanitizeComparisonOperator(string $operator): void
     {
         if (! in_array($operator, $this->comparisonOperators, true)) {
-            throw new SmolFrameworkException("Comparison operator '$operator' is not allowed.");
+            throw new SmolException("Comparison operator '$operator' is not allowed.");
         }
     }
 
@@ -966,7 +966,7 @@ final class QueryBuilder
                 $this->limit;
         }
 
-        throw new SmolFrameworkException('QueryBuilder::toString() error: no action has been set');
+        throw new SmolException('QueryBuilder::toString() error: no action has been set');
     }
 
     /**

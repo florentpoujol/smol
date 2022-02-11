@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\DateTime\DateTime;
+use FlorentPoujol\Smol\Components\DateTime\DateTime;
 use PHPUnit\Framework\TestCase;
 
 final class DateTimeTest extends TestCase

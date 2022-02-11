@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components\Cache;
+namespace FlorentPoujol\Smol\Tests\Components\Cache;
 
-use FlorentPoujol\SmolFramework\Components\Cache\FileCache;
+use FlorentPoujol\Smol\Components\Cache\FileCache;
 use PHPUnit\Framework\TestCase;
 
 final class FileCacheTest extends TestCase

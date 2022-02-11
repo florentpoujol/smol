@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Container;
+namespace FlorentPoujol\Smol\Components\Container;
 
 use Psr\Container\ContainerInterface;
 use ReflectionNamedType;
@@ -111,7 +111,7 @@ final class Container implements ContainerInterface
      *
      * @return null|object<ServiceType>
      *
-     * @throws \FlorentPoujol\SmolFramework\Components\Container\NotFoundException when a service name couldn't be resolved
+     * @throws \FlorentPoujol\Smol\Components\Container\NotFoundException when a service name couldn't be resolved
      */
     public function make(string $abstract, array $extraArguments = []): ?object
     {

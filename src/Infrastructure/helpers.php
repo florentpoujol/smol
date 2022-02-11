@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure;
+namespace FlorentPoujol\Smol\Infrastructure;
 
-use FlorentPoujol\SmolFramework\Infrastructure\Translations\TranslationsRepository;
+use FlorentPoujol\Smol\Infrastructure\Translations\TranslationsRepository;
 use RuntimeException;
 use Throwable;
 
-if (! function_exists('\FlorentPoujol\SmolFramework\Framework\env')) {
+if (! function_exists('\FlorentPoujol\Smol\Framework\env')) {
     function env(string $key, mixed $default = null): mixed
     {
         // getenv() always return a string, or false if env var doesn't exists
@@ -24,7 +24,7 @@ if (! function_exists('\FlorentPoujol\SmolFramework\Framework\env')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\SmolFramework\Framework\__')) {
+if (! function_exists('\FlorentPoujol\Smol\Framework\__')) {
     /**
      * @param array<string, string> $templateReplacements Keys are the semi-colon prefixed templates found in the translation string, values are their replacement string
      */
@@ -39,7 +39,7 @@ if (! function_exists('\FlorentPoujol\SmolFramework\Framework\__')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\SmolFramework\Framework\dump')) { // when it exists it is typically provided by the Symfony var_dumper component
+if (! function_exists('\FlorentPoujol\Smol\Framework\dump')) { // when it exists it is typically provided by the Symfony var_dumper component
     function dump(mixed ...$values): void
     {
         if (function_exists('xdebug_var_dump')) {
@@ -50,7 +50,7 @@ if (! function_exists('\FlorentPoujol\SmolFramework\Framework\dump')) { // when 
     }
 }
 
-if (! function_exists('\FlorentPoujol\SmolFramework\Framework\dd')) {
+if (! function_exists('\FlorentPoujol\Smol\Framework\dd')) {
     /**
      * @return never-return
      */
@@ -68,7 +68,7 @@ if (! function_exists('\FlorentPoujol\SmolFramework\Framework\dd')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\SmolFramework\Framework\read_environment_file')) {
+if (! function_exists('\FlorentPoujol\Smol\Framework\read_environment_file')) {
     function read_environment_file(
         string $filePath,
         string $envVarPattern = '/\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)\n/iU' // eg: SOME_ENV = "a value"

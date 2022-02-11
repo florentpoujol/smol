@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
 use DateInterval;
-use FlorentPoujol\SmolFramework\Components\DateTime\DateTime;
-use FlorentPoujol\SmolFramework\Components\DateTime\DateTimeImmutable;
+use FlorentPoujol\Smol\Components\DateTime\DateTime;
+use FlorentPoujol\Smol\Components\DateTime\DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class DateTimeImmutableTest extends TestCase

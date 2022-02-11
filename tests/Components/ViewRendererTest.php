@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components;
+namespace FlorentPoujol\Smol\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Components\ViewRenderer;
+use FlorentPoujol\Smol\Components\ViewRenderer;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 

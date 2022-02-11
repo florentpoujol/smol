@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Components\Events;
+namespace FlorentPoujol\Smol\Components\Events;
 
-use FlorentPoujol\SmolFramework\Components\Container\Container;
+use FlorentPoujol\Smol\Components\Container\Container;
 
 final class EventDispatcher
 {

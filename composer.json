@@ -8,7 +8,7 @@
           "src/Infrastructure/helpers.php"
         ],
         "psr-4" : {
-            "FlorentPoujol\\SmolFramework\\" : "src/"
+            "FlorentPoujol\\Smol\\": "src/"
         }
     },
     "autoload-dev": {
@@ -16,7 +16,7 @@
           "src/Infrastructure/helpers.php"
         ],
         "psr-4" : {
-            "FlorentPoujol\\SmolFramework\\Tests\\" : "tests/"
+            "FlorentPoujol\\Smol\\Tests\\" : "tests/"
         }
     },
     "require": {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Infrastructure\Http;
+namespace FlorentPoujol\Smol\Infrastructure\Http;
 
-use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
+use FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException;
 
 final class Router
 {
@@ -28,7 +28,7 @@ final class Router
     }
 
     /**
-     * @throws SmolFrameworkException When no route with that name is found
+     * @throws SmolException When no route with that name is found
      */
     public function getRouteByName(string $name): Route
     {
@@ -48,7 +48,7 @@ final class Router
             }
         }
 
-        throw new SmolFrameworkException("Unknown route name '$name'.");
+        throw new SmolException("Unknown route name '$name'.");
     }
 
     public function resolveRoute(string $method, string $uri): ?Route
@@ -89,7 +89,7 @@ final class Router
 
         $files = scandir($this->baseAppPath . '/routes');
         if (! is_array($files)) {
-            throw new SmolFrameworkException("Count not read route folder at '$this->baseAppPath . '/routes'.");
+            throw new SmolException("Count not read route folder at '$this->baseAppPath . '/routes'.");
         }
 
         foreach ($files as $path) {

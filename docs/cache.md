@@ -2,7 +2,7 @@
 
 Caching is the act of storing a value, typically temporarily, that was "expensive" to get in a store that is very fast to use.
 
-The framework provide the simple and classic `\FlorentPoujol\SmolFramework\Cache\CacheInterface` interface :
+The framework provide the simple and classic `\FlorentPoujol\Smol\Cache\CacheInterface` interface :
 ```php
 interface CacheInterface
 {
@@ -31,8 +31,8 @@ Example:
 final class Controller
 {
     public function __construct(
-        private \FlorentPoujol\SmolFramework\Cache\CacheInterface $cache
-        private \FlorentPoujol\SmolFramework\Database\QueryBuilder $queryBuilder
+        private \FlorentPoujol\Smol\Cache\CacheInterface $cache
+        private \FlorentPoujol\Smol\Database\QueryBuilder $queryBuilder
     ) {
     }
 
@@ -81,15 +81,15 @@ Exemple :
 ],
 ```
 
-Then bind the `\FlorentPoujol\SmolFramework\Cache\RedisCache` to the `\FlorentPoujol\SmolFramework\Cache\CacheInterface` during the boot of the framework.
+Then bind the `\FlorentPoujol\Smol\Cache\RedisCache` to the `\FlorentPoujol\Smol\Cache\CacheInterface` during the boot of the framework.
 
 ```php
-$container->bind(\FlorentPoujol\SmolFramework\Cache\CacheInterface::class, \FlorentPoujol\SmolFramework\Cache\RedisCache::class);
+$container->bind(\FlorentPoujol\Smol\Cache\CacheInterface::class, \FlorentPoujol\Smol\Cache\RedisCache::class);
 ```
 
 ## In-memory
 
-The `\FlorentPoujol\SmolFramework\Cache\CacheInterface` is by default binded to the `\FlorentPoujol\SmolFramework\Cache\InMemoryCache` implementation, which stores the value in a simple array and never has to communicate to any backend/store or even file.
+The `\FlorentPoujol\Smol\Cache\CacheInterface` is by default binded to the `\FlorentPoujol\Smol\Cache\InMemoryCache` implementation, which stores the value in a simple array and never has to communicate to any backend/store or even file.
 
 Expired values are not taken into account by the various methods like `get()` or `keys()`, but unlike with Redis, they will not be deleted automatically.
 

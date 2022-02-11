@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Tests\Components\Cache;
+namespace FlorentPoujol\Smol\Tests\Components\Cache;
 
-use FlorentPoujol\SmolFramework\Components\Cache\ArrayCache;
-use FlorentPoujol\SmolFramework\Components\Cache\CacheLock;
+use FlorentPoujol\Smol\Components\Cache\ArrayCache;
+use FlorentPoujol\Smol\Components\Cache\CacheLock;
 use PHPUnit\Framework\TestCase;
 
 final class CacheLockTest extends TestCase
