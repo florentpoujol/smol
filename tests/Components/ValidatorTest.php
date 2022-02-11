@@ -199,7 +199,6 @@ final class ValidatorTest extends TestCase
                 'email' => 'some.e+mail@site.ab.cd',
                 'date' => '1970-01-01',
                 'datetime' => '1970-01-01 00:00:00',
-                'some value',
             ])
             ->setRules([
                 'uuid2' => ['uuid'],

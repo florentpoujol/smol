@@ -85,7 +85,7 @@ trait ImmutableDateTimeTrait
     {
         $diff = $this->diff($other);
 
-        if (! $absolute && $diff->invert) {
+        if (! $absolute && (bool) $diff->invert) {
             return -$diff->m;
         }
 
@@ -96,7 +96,7 @@ trait ImmutableDateTimeTrait
     {
         $diff = $this->diff($other);
 
-        if (! $absolute && $diff->invert) {
+        if (! $absolute && (bool) $diff->invert) {
             return -$diff->y;
         }
 

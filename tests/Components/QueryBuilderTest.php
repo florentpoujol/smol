@@ -91,7 +91,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'INSERT INTO `test` (`name`, `email`) VALUES (?, ?), (?, ?)';
         self::assertSame($expected, $qb->toSql());
 
-        /** @var array<array> $entries */
+        /** @var array<array<string, mixed>> $entries */
         $entries = $qb->reset()->selectMany();
 
         self::assertTrue(isset($entries[0]['id']));
@@ -136,7 +136,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'UPDATE `test` SET `email` = ? WHERE `name` = ?';
         self::assertSame($expected, $qb->toSql());
 
-        /** @var array<array> $entries */
+        /** @var array<array<string, mixed>> $entries */
         $entries = $qb->reset()->selectMany();
         self::assertCount(2, $entries);
 
@@ -230,7 +230,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'DELETE FROM `test` WHERE `email` = ? ';
         self::assertSame($expected, $qb->toSql());
 
-        /** @var array<array> $entries */
+        /** @var array<array<string, mixed>> $entries */
         $entries = $qb->reset()->selectMany();
         self::assertCount(1, $entries);
 
@@ -501,7 +501,7 @@ final class QueryBuilderTest extends TestCase
         $expected = 'SELECT * FROM `test` INNER JOIN `join_table` AS `jt` ON `jt`.`test_name` = `test`.`name` WHERE `name` = ? ';
         self::assertSame($expected, $qb->toSql());
 
-        /** @var array<array> $entries */
+        /** @var array<array<string, mixed>> $entries */
         $entries = $qb->selectMany();
 
         self::assertCount(2, $entries);
@@ -536,7 +536,7 @@ final class QueryBuilderTest extends TestCase
             ]);
 
         // assert
-        /** @var array<\FlorentPoujol\Smol\Tests\MyEntity> $entries */
+        /** @var array<MyEntity> $entries */
         $entries = $qb->reset()
             ->hydrate(MyEntity::class)
             ->selectMany();
@@ -554,9 +554,9 @@ final class QueryBuilderTest extends TestCase
 
 final class MyEntity
 {
-    private int $id;
+    private int $id; // @phpstan-ignore-line (prop is never written, only read)
     public string $name;
-    private string $createdAt;
+    private string $createdAt; // @phpstan-ignore-line (prop is never written, only read)
 
     public function getId(): int
     {

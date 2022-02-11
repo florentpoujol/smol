@@ -11,27 +11,27 @@ require __DIR__ . '/../vendor/autoload.php';
 
 // \FlorentPoujol\Smol\Framework\read_environment_file(__DIR__ . '/../.env');
 
-$framework = Project::make(__DIR__ . '/..');
+$project = Project::make(__DIR__ . '/..');
 
 // --------------------------------------------------
 // register service providers and/or do other init steps
 
-$framework->setServiceProviders([
+$project->setServiceProviders([
     SmolServiceProvider::class,
     // YourAppServiceProvider::class,
 ]);
 
-$framework->register();
+$project->register();
 
-$framework->boot();
+$project->boot();
 
 // --------------------------------------------------
 // actually handle the HTTP request
 
-$httpKernel = new HttpKernel($framework->getContainer());
+$httpKernel = new HttpKernel($project->getContainer());
 
 /** @var ServerRequestInterface $serverRequest */
-$serverRequest = $framework->getContainer()->get(ServerRequestInterface::class);
+$serverRequest = $project->getContainer()->get(ServerRequestInterface::class);
 
 $response = $httpKernel->handle($serverRequest);
 
@@ -58,6 +58,6 @@ $response->getBody()->close();
 // --------------------------------------------------
 // stops/cleanup the framework
 
-$framework->stop();
+$project->stop();
 
 exit(0);

@@ -38,14 +38,14 @@ final class ArrayFileSystem implements FileSystemInterface
         );
     }
 
-    public function write2(string $path, string $content, array $config = []): void
-    {
-        $this->directory[$path] = new FileInfo(
-            $content,
-            $path,
-            ...($config['fileinfo'] ?? [])
-        );
-    }
+    // public function write2(string $path, string $content, array $config = []): void
+    // {
+    //     $this->directory[$path] = new FileInfo(
+    //         $content,
+    //         $path,
+    //         ...($config['fileinfo'] ?? [])
+    //     );
+    // }
 
     public function createDirectory(string $path, array $config = []): void
     {
@@ -59,10 +59,10 @@ final class ArrayFileSystem implements FileSystemInterface
         }
     }
 
-    public function createDirectory2(string $path, array $config = []): void
-    {
-        $this->directory[$path] = [];
-    }
+    // public function createDirectory2(string $path, array $config = []): void
+    // {
+    //     $this->directory[$path] = [];
+    // }
 
     public function move(string $source, string $destination, array $config = []): void
     {
@@ -75,7 +75,7 @@ final class ArrayFileSystem implements FileSystemInterface
         $fileInfo = $this->getFileInfo($source);
 
         $config['fileinfo'] ??= [];
-        $config['fileinfo'] += $fileInfo->getMetadata();
+        $config['fileinfo'] = array_merge($fileInfo->getMetadata(), $config['fileinfo']);
 
         $this->write($destination, $fileInfo->content, $config);
     }

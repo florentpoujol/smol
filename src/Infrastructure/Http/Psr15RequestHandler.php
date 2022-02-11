@@ -15,7 +15,7 @@ final class Psr15RequestHandler implements RequestHandlerInterface
     private array $middleware;
 
     public function __construct(
-        private Route   $route,
+        private Route $route,
         private Project $framework,
     ) {
         $this->middleware = $route->getMiddleware(); // @phpstan-ignore-line

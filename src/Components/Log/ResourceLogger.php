@@ -14,7 +14,7 @@ final class ResourceLogger extends AbstractLogger
     private $resource;
 
     /**
-     * @param callable $formatter
+     * @param null|callable $formatter
      */
     public function __construct(
         private string $resourcePath,

@@ -64,7 +64,7 @@ final class SmolServiceProvider implements ServiceProviderInterface
     }
 
     /**
-     * @param array{dsn: string, username: ?string, password: ?string, options: ?array} $constructorArguments
+     * @param array{dsn: string, username: ?string, password: ?string, options: ?array<int, bool|int>} $constructorArguments
      */
     public function makePdo(Container $container, array $constructorArguments = null): PDO
     {
@@ -77,10 +77,10 @@ final class SmolServiceProvider implements ServiceProviderInterface
         if ($constructorArguments === null) {
             $constructorArguments = $container->get(ConfigRepository::class)->get('app.database', []);
         }
-
+        // TODO : use a struct for the $constructorArguments instead of an array
         $constructorArguments['options'] = array_merge($defaultOptions, $constructorArguments['options'] ?? []);
 
-        return new PDO(...$constructorArguments);
+        return new PDO(...$constructorArguments); // @phpstan-ignore-line (Missing parameter $dsn (string) in call to PDO constructor.)
     }
 
     public function makeRedis(Container $container): Redis

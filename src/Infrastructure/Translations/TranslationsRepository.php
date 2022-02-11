@@ -8,7 +8,7 @@ use FlorentPoujol\Smol\Components\Config\ConfigRepository;
 
 final class TranslationsRepository
 {
-    /** @var array<string, array<string, array|string>> Translations per language, per file name */
+    /** @var array<string, array<string, array<string, mixed>|string>> Translations per file name, per language (the top level key) */
     private array $translations = [];
 
     public function __construct(
@@ -30,7 +30,7 @@ final class TranslationsRepository
 
         $keys = explode('.', $key);
 
-        // read language file not done already
+        // read language file if not done already
         $this->translations[$language] ??= [];
 
         if (! isset($this->translations[$language][$keys[0]])) {

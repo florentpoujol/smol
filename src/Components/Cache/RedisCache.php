@@ -17,7 +17,7 @@ final class RedisCache implements CacheInterface
     public function set(string $key, mixed $value, int $ttlInSeconds = null): void
     {
         if ($ttlInSeconds !== null) {
-            $this->redis->setEx($this->prefix . $key, $ttlInSeconds, serialize($value));
+            $this->redis->setex($this->prefix . $key, $ttlInSeconds, serialize($value));
         } else {
             $this->redis->set($this->prefix . $key, serialize($value));
         }
@@ -37,7 +37,7 @@ final class RedisCache implements CacheInterface
     {
         if ($ttlInSeconds !== null && ! $this->has($key)) {
             $initialValue += $offset;
-            $this->redis->setEx($this->prefix . $key, $ttlInSeconds, (string) $initialValue);
+            $this->redis->setex($this->prefix . $key, $ttlInSeconds, (string) $initialValue);
 
             return $initialValue;
         }

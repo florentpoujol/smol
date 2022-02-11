@@ -101,7 +101,7 @@ final class LocalFileSystem implements FileSystemInterface
                     continue;
                 }
 
-                $files[] = new FileInfo(
+                $contents[] = new FileInfo(
                     $fileInfo,
                     $fileInfo->getRealPath(),
                 );
@@ -114,7 +114,7 @@ final class LocalFileSystem implements FileSystemInterface
         assert(is_array($files));
 
         $contents = [];
-        foreach ($files as $path) {
+        foreach ($files as $path) { // @phpstan-ignore-line (Foreach overwrites $path with its value variable.)
             if (str_ends_with($path, '.')) {
                 continue;
             }
@@ -125,7 +125,7 @@ final class LocalFileSystem implements FileSystemInterface
             );
         }
 
-        return [];
+        return $contents;
     }
 
     public function lastModified(string $path): int

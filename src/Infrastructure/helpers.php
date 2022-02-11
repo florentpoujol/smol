@@ -96,12 +96,12 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\read_environment_file')) {
 }
 
 /**
+ * @param callable|class-string<Throwable>|Throwable $exception
+ *
  * @return void|never-return
  */
 function throwIf(bool $condition, callable|string|Throwable $exception): void
 {
-    assert($condition);
-
     if (! $condition) {
         if (is_callable($exception)) {
             $exception();

@@ -3,13 +3,32 @@ includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
-    level: 8
+    level: 6
 
     checkGenericClassInNonGenericObjectType: false
+    reportUnmatchedIgnoredErrors: false
 
     paths:
         - src
         - tests
 
     excludePaths:
-        - tests/Fixtures/Views
+        - tests/Components/Fixtures/Views
+        - src/Infrastructure/Http/ServerRequest.php
+
+    ignoreErrors:
+        -
+            path: ./src/Components/Container/Container.php
+            message: '#Parameter \#1 \$id .+ should be contravariant with parameter \$id \(string\) of method .+ContainerInterface#'
+        -
+            path: ./src/Components/Entity.php
+            message: '#Variable property access on #'
+        -
+            path: ./src/Components/Entity.php
+            message: '#Expression .+propertyName.+ on a separate line does not do anything#'
+        -
+            path: ./src/Components/Entity.php
+            message: '#Dead catch - Error is never thrown in the try block#' # this is not true, we are puposefully accessing typed properties in the hope to have a TypeError will be thrown when one is accessed while uninitialized
+        -
+            path: ./src/Components/FileSystem/FtpFileSystem.php
+            message: '#Parameter \#1 \$ftp of function ftp_.+ expects resource, FTP\\Connection.+given#'

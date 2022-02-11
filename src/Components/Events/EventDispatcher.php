@@ -122,7 +122,7 @@ final class EventDispatcher
                     $callable = $subscriber . '@' . $method;
                 }
 
-                $this->addListener($eventName, $callable, (int) ($priority ?? 0));
+                $this->addListener($eventName, $callable, (int) $priority);
             }
         }
     }

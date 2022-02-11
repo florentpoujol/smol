@@ -34,8 +34,8 @@ final class FtpFileSystem implements FileSystemInterface
 
         $connection = ftp_connect($this->hostname, $this->port);
         // ftp_ssl_connect()
-        assert($connection instanceof Connection);
-        $this->connection = $connection;
+        assert($connection instanceof Connection); // @phpstan-ignore-line (Call to function assert() with false will always evaluate to false. / Instanceof between resource|false and FTP\Connection will always evaluate to false.) (somehow PHPStan thinks I am on PHP 7+ ?)
+    $this->connection = $connection;
 
         if ($this->username !== null && $this->password !== null) {
             ftp_login($this->connection, $this->username, $this->password);
@@ -156,7 +156,7 @@ final class FtpFileSystem implements FileSystemInterface
                     continue;
                 }
 
-                $files[] = new FileInfo(
+                $contents[] = new FileInfo(
                     $fileInfo,
                     $fileInfo->getRealPath(),
                 );
@@ -169,7 +169,7 @@ final class FtpFileSystem implements FileSystemInterface
         assert(is_array($files));
 
         $contents = [];
-        foreach ($files as $path) {
+        foreach ($files as $path) { // @phpstan-ignore-line (Foreach overwrites $path with its value variable.)
             if (str_ends_with($path, '.')) {
                 continue;
             }
@@ -180,7 +180,7 @@ final class FtpFileSystem implements FileSystemInterface
             );
         }
 
-        return [];
+        return $contents;
     }
 
     public function lastModified(string $path): int

@@ -26,7 +26,7 @@ final class DateTimeTest extends TestCase
         $other = new DateTime();
         $time = microtime(true);
         for ($i = 0; $i < $max; ++$i) {
-            $dt->isSameMinute2(41);
+            // $dt->isSameMinute2(41);
         }
         $time2 = microtime(true);
         echo $time2 - $time . PHP_EOL;

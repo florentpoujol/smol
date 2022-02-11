@@ -20,7 +20,7 @@ abstract class Entity implements JsonSerializable
      */
     public static function fromArray(array $array, bool $throwOnMissingProperty = true, bool $validate = true): static
     {
-        $instance = new static();
+        $instance = new static(); // @phpstan-ignore-line (unsafe usage of new static)
 
         foreach ($array as $key => $value) {
             if (! property_exists($instance, $key)) {

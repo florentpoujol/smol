@@ -41,6 +41,14 @@ final class FileInfo
             return $this->content;
         }
 
-        return file_get_contents($this->content);
+        if (is_resource($this->content)) {
+            rewind($this->content);
+
+            return fread($this->content, 999_999_999);
+        }
+
+        assert($this->content instanceof SplFileInfo); // @phpstan-ignore-line (complain assert is redondant, but since the property has no typehint, it isn't)
+
+        return file_get_contents($this->content->getRealPath());
     }
 }

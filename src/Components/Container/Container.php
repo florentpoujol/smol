@@ -23,7 +23,7 @@ final class Container implements ContainerInterface
      * Values cached by get().
      * Typically, object instances but may be any values returned by closures or found in services.
      *
-     * @var array<class-string<ServiceType>, object<ServiceType>
+     * @var array<class-string<ServiceType>, ServiceType>
      */
     private array $instances = [];
 
@@ -34,7 +34,7 @@ final class Container implements ContainerInterface
 
     public function __construct()
     {
-        $this->instances[self::class] = $this;
+        $this->instances[self::class] = $this; // @phpstan-ignore-line (Array (array<class-string<ServiceType of object>, ServiceType of object>) does not accept $this(FlorentPoujol\Smol\Components\Container\Container).)
     }
 
     public function setParameter(string $name, mixed $value): void
@@ -83,7 +83,7 @@ final class Container implements ContainerInterface
     /**
      * @param class-string<ServiceType> $id
      *
-     * @return object<ServiceType>
+     * @return ServiceType
      */
     public function get(string $id): object
     {
@@ -109,9 +109,9 @@ final class Container implements ContainerInterface
      *
      * @param array<string, mixed> $extraArguments
      *
-     * @return null|object<ServiceType>
+     * @return null|ServiceType
      *
-     * @throws \FlorentPoujol\Smol\Components\Container\NotFoundException when a service name couldn't be resolved
+     * @throws NotFoundException when a service name couldn't be resolved
      */
     public function make(string $abstract, array $extraArguments = []): ?object
     {
@@ -153,9 +153,9 @@ final class Container implements ContainerInterface
      * @param class-string<ServiceType> $classFqcn
      * @param array<string, mixed>      $extraArguments
      *
-     * @return object<ServiceType>
+     * @return ServiceType
      */
-    private function createObject(string $classFqcn, array $extraArguments = []): ?object
+    private function createObject(string $classFqcn, array $extraArguments = []): object
     {
         $reflectionClass = new \ReflectionClass($classFqcn);
         $reflectionConstructor = $reflectionClass->getConstructor();

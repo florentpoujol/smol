@@ -73,9 +73,6 @@ final class HttpKernel
         return $response;
     }
 
-    /**
-     * @return never-return
-     */
     public function handleRequestThroughPsr15Middleware(): ResponseInterface
     {
         /** @var PsrRequestHandlerInterface $handler */
@@ -84,7 +81,7 @@ final class HttpKernel
         /** @var ServerRequestInterface $serverRequest */
         $serverRequest = $this->container->get(ServerRequestInterface::class);
 
-        return $handler->handle($serverRequest); // see in the handle method for explanation as to why this single like does everything and return the final response, whatever happens in between
+        return $handler->handle($serverRequest); // see in the handle method for explanation as to why this single line does everything and return the final response, whatever happens in between
     }
 
     private function sendRequestThroughMiddleware(Route $route): ?ResponseInterface

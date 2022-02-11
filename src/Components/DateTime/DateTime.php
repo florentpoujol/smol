@@ -174,10 +174,10 @@ final class DateTime extends \DateTime
     public function addYearsWithoutOverflow(int $years): self
     {
         $year = $this->getYear() + $years;
-
+        $month = $this->getMonth();
         $day = $this->getDay();
+
         if ($day >= 29) {
-            $month = $this->getMonth();
             $day = min($day, (int) date('t', strtotime("$year-$month-01")));
         }
 
