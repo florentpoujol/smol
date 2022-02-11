@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Tests\Components;
 
 use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
-use FlorentPoujol\SmolFramework\Framework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\Infrastructure\Translations\TranslationsRepository;
 use PHPUnit\Framework\TestCase;
 
 final class TranslationRepositoryTest extends TestCase

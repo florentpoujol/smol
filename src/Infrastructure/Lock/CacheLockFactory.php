@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework\Lock;
+namespace FlorentPoujol\SmolFramework\Infrastructure\Lock;
 
 use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
 use FlorentPoujol\SmolFramework\Components\Cache\CacheLock;

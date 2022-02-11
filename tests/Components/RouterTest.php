@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Tests\Components;
 
-use FlorentPoujol\SmolFramework\Framework\Http\Route;
-use FlorentPoujol\SmolFramework\Framework\Http\Router;
+use FlorentPoujol\SmolFramework\Infrastructure\Http\Route;
+use FlorentPoujol\SmolFramework\Infrastructure\Http\Router;
 use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware1;
 use FlorentPoujol\SmolFramework\Tests\Fixtures\Routes\TestMiddleware2;
 use PHPUnit\Framework\TestCase;

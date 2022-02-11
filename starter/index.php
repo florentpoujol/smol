@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use FlorentPoujol\SmolFramework\Framework\Framework;
-use FlorentPoujol\SmolFramework\Framework\HttpKernel;
-use FlorentPoujol\SmolFramework\Framework\SmolServiceProvider;
+use FlorentPoujol\SmolFramework\Infrastructure\Framework;
+use FlorentPoujol\SmolFramework\Infrastructure\HttpKernel;
+use FlorentPoujol\SmolFramework\Infrastructure\SmolServiceProvider;
 use Psr\Http\Message\ServerRequestInterface;
 
 require __DIR__ . '/../vendor/autoload.php';

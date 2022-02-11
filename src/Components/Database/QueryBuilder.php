@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\SmolFramework\Components\Database;
 
-use FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException;
+use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
 use PDO;
 use ReflectionClass;
 use ReflectionException;
@@ -590,7 +590,7 @@ final class QueryBuilder
     /**
      * @return void|never-return
      *
-     * @throws \FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException
+     * @throws \FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException
      */
     private function sanitizeComparisonOperator(string $operator): void
     {

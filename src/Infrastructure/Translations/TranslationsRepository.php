@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework\Translations;
+namespace FlorentPoujol\SmolFramework\Infrastructure\Translations;
 
 use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 

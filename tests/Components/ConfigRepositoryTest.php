@@ -6,8 +6,8 @@ namespace FlorentPoujol\SmolFramework\Tests\Components;
 
 use FlorentPoujol\SmolFramework\Components\Config\ConfigRepository;
 use PHPUnit\Framework\TestCase;
-use function FlorentPoujol\SmolFramework\Framework\env;
-use function FlorentPoujol\SmolFramework\Framework\read_environment_file;
+use function FlorentPoujol\SmolFramework\Infrastructure\env;
+use function FlorentPoujol\SmolFramework\Infrastructure\read_environment_file;
 
 final class ConfigRepositoryTest extends TestCase
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework;
+namespace FlorentPoujol\SmolFramework\Infrastructure;
 
 use FlorentPoujol\SmolFramework\Components\Container\Container;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\SmolFramework\Components\HttpClient;
 
 use CurlHandle;
-use FlorentPoujol\SmolFramework\Framework\Exceptions\SmolFrameworkException;
+use FlorentPoujol\SmolFramework\Infrastructure\Exceptions\SmolFrameworkException;
 use Nyholm\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;

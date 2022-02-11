@@ -5,7 +5,7 @@
     "description": "A lean but full-featured framework for PHP 8.1+",
     "autoload": {
         "files": [
-            "src/Framework/helpers.php"
+          "src/Infrastructure/helpers.php"
         ],
         "psr-4" : {
             "FlorentPoujol\\SmolFramework\\" : "src/"
@@ -13,7 +13,7 @@
     },
     "autoload-dev": {
         "files": [
-            "src/Framework/helpers.php"
+          "src/Infrastructure/helpers.php"
         ],
         "psr-4" : {
             "FlorentPoujol\\SmolFramework\\Tests\\" : "tests/"

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework\Http;
+namespace FlorentPoujol\SmolFramework\Infrastructure\Http;
 
 use FlorentPoujol\SmolFramework\Components\Cache\CacheInterface;
 use Psr\Http\Message\ResponseInterface;

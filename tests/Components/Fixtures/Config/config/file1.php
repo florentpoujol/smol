@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use function FlorentPoujol\SmolFramework\Framework\env;
+use function FlorentPoujol\SmolFramework\Infrastructure\env;
 
 return [
     'key' => 'file1',

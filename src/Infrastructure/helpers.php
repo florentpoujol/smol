@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlorentPoujol\SmolFramework\Framework;
+namespace FlorentPoujol\SmolFramework\Infrastructure;
 
-use FlorentPoujol\SmolFramework\Framework\Translations\TranslationsRepository;
+use FlorentPoujol\SmolFramework\Infrastructure\Translations\TranslationsRepository;
 use RuntimeException;
 use Throwable;
 
