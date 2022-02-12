@@ -66,6 +66,16 @@ final class ResourceLogger extends AbstractLogger
         fwrite($this->resource, $line . PHP_EOL); // @phpstan-ignore-line
     }
 
+    public function __serialize(): array
+    {
+        $this->__destruct();
+
+        return [
+            'resourcePath' => $this->resourcePath,
+            'formatter' => $this->formatter,
+        ];
+    }
+
     public function __destruct()
     {
         if ($this->resource !== null) {

@@ -8,7 +8,7 @@ use FlorentPoujol\Smol\Infrastructure\Translations\TranslationsRepository;
 use RuntimeException;
 use Throwable;
 
-if (! function_exists('\FlorentPoujol\Smol\Framework\env')) {
+if (! function_exists('\FlorentPoujol\Smol\env')) {
     function env(string $key, mixed $default = null): mixed
     {
         // getenv() always return a string, or false if env var doesn't exists
@@ -24,7 +24,7 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\env')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\Smol\Framework\__')) {
+if (! function_exists('\FlorentPoujol\Smol\__')) {
     /**
      * @param array<string, string> $templateReplacements Keys are the semi-colon prefixed templates found in the translation string, values are their replacement string
      */
@@ -39,7 +39,7 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\__')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\Smol\Framework\dump')) { // when it exists it is typically provided by the Symfony var_dumper component
+if (! function_exists('\FlorentPoujol\Smol\dump')) { // when it exists it is typically provided by the Symfony var_dumper component
     function dump(mixed ...$values): void
     {
         if (function_exists('xdebug_var_dump')) {
@@ -50,7 +50,7 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\dump')) { // when it exists
     }
 }
 
-if (! function_exists('\FlorentPoujol\Smol\Framework\dd')) {
+if (! function_exists('\FlorentPoujol\Smol\dd')) {
     /**
      * @return never-return
      */
@@ -68,7 +68,7 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\dd')) {
     }
 }
 
-if (! function_exists('\FlorentPoujol\Smol\Framework\read_environment_file')) {
+if (! function_exists('\FlorentPoujol\Smol\read_environment_file')) {
     function read_environment_file(
         string $filePath,
         string $envVarPattern = '/\s*(?<key>[A-Z0-9_-]+)\s*=(?:\s*)(?<value>.+)(?:\s*)\n/iU' // eg: SOME_ENV = "a value"
@@ -102,21 +102,23 @@ if (! function_exists('\FlorentPoujol\Smol\Framework\read_environment_file')) {
  */
 function throwIf(bool $condition, callable|string|Throwable $exception): void
 {
-    if (! $condition) {
-        if (is_callable($exception)) {
-            $exception();
-
-            return;
-        }
-
-        if ($exception instanceof Throwable) {
-            throw $exception;
-        }
-
-        if (class_exists($exception)) {
-            throw new $exception();
-        }
-
-        throw new RuntimeException($exception);
+    if ($condition) {
+        return;
     }
+
+    if (is_callable($exception)) {
+        $exception();
+
+        return;
+    }
+
+    if ($exception instanceof Throwable) {
+        throw $exception;
+    }
+
+    if (class_exists($exception)) {
+        throw new $exception();
+    }
+
+    throw new RuntimeException($exception);
 }

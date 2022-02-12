@@ -154,4 +154,25 @@ final class HttpKernel
             ...$route->getActionArguments() // this unpacks an assoc array and make use of named arguments to inject the proper value taken from the URI segments to the correct argument
         );
     }
+
+    public function sendResponse(ResponseInterface $response): void
+    {
+        http_response_code($response->getStatusCode());
+
+        /**
+         * @var array<string> $values
+         */
+        foreach ($response->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                header("$name: $value", false);
+            }
+        }
+
+        $body = $response->getBody();
+        $body->rewind();
+
+        echo $body->getContents();
+
+        $body->close();
+    }
 }

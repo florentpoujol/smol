@@ -7,9 +7,10 @@ namespace FlorentPoujol\Smol\Components\Container;
 use Psr\Container\ContainerInterface;
 use ReflectionNamedType;
 use ReflectionUnionType;
+use Serializable;
 
 /**
- * @template ServiceType of object
+ * @template ServiceType
  */
 final class Container implements ContainerInterface
 {
@@ -31,6 +32,31 @@ final class Container implements ContainerInterface
      * @var array<string|class-string, mixed> match
      */
     private array $parameters = [];
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    public function __serialize(): array
+    {
+        $bindings = [];
+        foreach ($this->bindings as $key => $binding) {
+            if (! $binding instanceof \Closure) {
+                $bindings[$key] = $binding;
+            }
+        }
+
+        $instances = [];
+        foreach ($this->instances as $key => $instance) {
+            if ($instance instanceof Serializable || method_exists($instance, '__serialize') || method_exists($instance, '__sleep')) {
+                $instances[$key] = $instance;
+            }
+        }
+
+        return [
+            'bindings' => $bindings,
+            'instances' => $instances,
+        ];
+    }
 
     public function __construct()
     {
@@ -85,7 +111,7 @@ final class Container implements ContainerInterface
      *
      * @return ServiceType
      */
-    public function get(string $id): object
+    public function get(string $id): mixed
     {
         if (isset($this->instances[$id])) {
             return $this->instances[$id];

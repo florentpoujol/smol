@@ -9,7 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-// \FlorentPoujol\Smol\Framework\read_environment_file(__DIR__ . '/../.env');
+\FlorentPoujol\Smol\read_environment_file(__DIR__ . '/../.env');
 
 $project = Project::make(__DIR__ . '/..');
 
