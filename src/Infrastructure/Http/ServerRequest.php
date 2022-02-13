@@ -160,13 +160,18 @@ final class ServerRequest implements ServerRequestInterface
     private ?array $parsedBody = null;
 
     /**
-     * @return array The JSON decoded body, as array, or empty array if there was an error or the body wasn't JSON
+     * @return array<mixed> The JSON decoded body, as array, or empty array if there was an error or the body wasn't JSON
      */
     public function getParsedBody(): array
     {
         if ($this->parsedBody === null) {
-            $this->parsedBody = json_decode($this->getBody()->getContents(), true) ?? [];
+            $contentType = $this->getHeader('Content-Type')[0] ?? null;
+            if ($contentType === 'application/json') {
+                $this->parsedBody = json_decode($this->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR) ?? [];
+            }
         }
+        // in the case of 'multipart/form-data' or 'application/x-www-form-urlencoded', the parsed body is already set to the value of $_POST
+        /* @see \Nyholm\Psr7Server\ServerRequestCreator::fromGlobals */
 
         return $this->parsedBody;
     }

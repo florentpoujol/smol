@@ -89,16 +89,21 @@ final class Validator
     }
 
     /**
+     * @param array<string> $exclude The validated keys to exclude from the returned data
+     *
      * @return array<string, mixed>|stdClass
      *
      * @throws ValidationException if some data isn't valid
      */
-    public function getValidatedData(): array|stdClass
+    public function getValidatedData(array $exclude = []): array|stdClass
     {
         $this->throwIfNotValid();
 
         if ($this->arrayData !== null) {
-            return array_intersect_key($this->arrayData, $this->rules);
+            return array_diff_key(
+                array_intersect_key($this->arrayData, $this->rules),
+                array_fill_keys($exclude, null)
+            );
         }
 
         if ($this->objectData instanceof stdClass) {
@@ -106,7 +111,10 @@ final class Validator
 
             $validatedProperties = array_keys($this->rules);
             foreach ((array) $this->objectData as $property => $value) {
-                if (in_array($property, $validatedProperties, true)) {
+                if (
+                    in_array($property, $validatedProperties, true)
+                    && ! in_array($property, $exclude, true)
+                ) {
                     $validated->{$property} = $value;
                 }
             }

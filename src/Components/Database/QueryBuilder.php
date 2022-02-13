@@ -289,6 +289,11 @@ final class QueryBuilder
         return $this->insertMany([$row]);
     }
 
+    public function lastInsertedId(?string $sequence = 'id'): int
+    {
+        return (int) $this->pdo->lastInsertId($sequence);
+    }
+
     private function buildInsertQueryString(): string
     {
         if ($this->fields === []) {

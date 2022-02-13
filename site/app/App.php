@@ -108,7 +108,7 @@ final class App
 
     public static function makePsrServerRequest(): ServerRequestInterface
     {
-        return new ServerRequest(self::makePsrServerRequestCreator()->fromGlobals());
+        return new ServerRequest(self::makePsrServerRequestCreator()->fromGlobals()); // Smol server request, that decorates Nyholm server request
     }
 
     public static function makePdo(Container $container): PDO
