@@ -13,14 +13,17 @@ final class ResourceLogger extends AbstractLogger
     /** @var null|resource */
     private $resource;
 
+    /** @var callable */
+    private $formatter;
+
     /**
      * @param null|callable $formatter
      */
     public function __construct(
         private string $resourcePath,
-        private $formatter = null
+        $formatter = null
     ) {
-        $this->formatter ??= [$this, 'defaultLineFormatter'];
+        $this->formatter = $formatter ?? [$this, 'defaultLineFormatter'];
     }
 
     private function openResource(): void
@@ -66,9 +69,18 @@ final class ResourceLogger extends AbstractLogger
         fwrite($this->resource, $line . PHP_EOL); // @phpstan-ignore-line
     }
 
+    /**
+     * @return array<string, callable|string>
+     *
+     * @throws Exception If the formatter is a closure
+     */
     public function __serialize(): array
     {
         $this->__destruct();
+
+        if ($this->formatter instanceof \Closure) {
+            throw new Exception();
+        }
 
         return [
             'resourcePath' => $this->resourcePath,

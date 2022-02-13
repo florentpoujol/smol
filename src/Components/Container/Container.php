@@ -10,7 +10,7 @@ use ReflectionUnionType;
 use Serializable;
 
 /**
- * @template ServiceType
+ * @template ServiceType of object
  */
 final class Container implements ContainerInterface
 {

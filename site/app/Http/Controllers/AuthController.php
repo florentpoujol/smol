@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace FlorentPoujol\Smol\Site\app\Http\Controllers;
 
 use Exception;
-use FlorentPoujol\Smol\Components\Config\ConfigRepository;
+use FlorentPoujol\Smol\Components\Cache\CacheRateLimiter;
 use FlorentPoujol\Smol\Components\Database\QueryBuilder;
 use FlorentPoujol\Smol\Components\DateTime\DateTime;
 use FlorentPoujol\Smol\Components\Http\Session;
+use FlorentPoujol\Smol\Components\Validation\RuleInterface;
 use FlorentPoujol\Smol\Components\Validation\Validator;
 use FlorentPoujol\Smol\Components\ViewRenderer;
+use FlorentPoujol\Smol\Infrastructure\RateLimiter\CacheRateLimiterFactory;
 use FlorentPoujol\Smol\Site\app\Entities\User;
 use FlorentPoujol\Smol\Site\app\Repositories\UserRepository;
 use Nyholm\Psr7\Response;
@@ -18,16 +20,24 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final class AuthController
 {
+    private CacheRateLimiter $rateLimiter;
+
     public function __construct(
-        private ConfigRepository $config,
-        private QueryBuilder $queryBuilder,
+        private CacheRateLimiterFactory $rateLimiterFactory,
         private ServerRequestInterface $request,
         private UserRepository $userRepo,
         private Validator $validator,
         private ViewRenderer $viewRenderer,
     ) {
+        $this->rateLimiter = $this->rateLimiterFactory->makeFromConfig('auth', $this->request->getServerParams()['client-ip']);
     }
 
+    /**
+     * @param array<string, array<string|RuleInterface>> $rules
+     * @param array<string>                              $exclude
+     *
+     * @return array<string, mixed>
+     */
     private function getValidatedBody(array $rules, array $exclude = []): array
     {
         return $this->validator
@@ -52,7 +62,6 @@ final class AuthController
      */
     public function register(): Response
     {
-        // validate
         $data = $this->getValidatedBody([
             'name' => ['string', 'min:5', 'max:255'],
             'email' => ['email', 'min:5', 'max:255'],
@@ -60,20 +69,13 @@ final class AuthController
             'password_confirm' => ['same-as:password'],
         ], ['password_confirm']);
 
-        // prepare user before insertion
         $user = User::fromArray($data);
-
-        $user->password = User::hashPassword(
-            $user->password,
-            $this->config->get('auth.password.algo', PASSWORD_BCRYPT),
-            $this->config->get('auth.password.algo-options', [
-                'rounds' => 15,
-            ])
-        );
+        $user->password = $this->userRepo->hashPassword($user->password);
         $user->regenerateAuthToken(); // auth token used for email validation
 
-        // insert
-        $this->queryBuilder->table('users')->insertSingle($data);
+        $this->userRepo->insert($user);
+
+        // TODO send email with confirm email address link
 
         return new Response();
     }
@@ -94,6 +96,8 @@ final class AuthController
      */
     public function login(): Response
     {
+        $this->rateLimiter->hitAndTrow();
+
         $data = $this->getValidatedBody([
             'email' => ['email', 'min:5', 'max:255'],
             'password' => ['string', 'min:8'],
@@ -103,14 +107,15 @@ final class AuthController
         $user = $this->userRepo->find($data['email'], 'email');
 
         if (
-            $user === null
-            || $user->email_validated_at === null
-            || ! password_verify($data['password'], $user->password)
+            ! password_verify($data['password'], $user->password ?? '') // do that first because it will take the most time, and prevent timing attacks
+            || $user?->email_validated_at === null
         ) {
             throw new Exception();
         }
 
         // login
+        $this->rateLimiter->clear();
+
         $session = $this->request->getAttribute('session');
         $session->regenerateId();
         $session->data['user_id'] = $user->id;
@@ -123,6 +128,8 @@ final class AuthController
      */
     public function validateEmail(string $email, string $token): Response
     {
+        $this->rateLimiter->hitAndTrow();
+
         /** @var null|User $user */
         $user = $this->userRepo->getQueryBuilder()
             ->where('email', '=', $email)
@@ -137,6 +144,8 @@ final class AuthController
         $user->email_validated_at = date('Y-m-d H:i:s');
 
         $this->userRepo->update($user, ['auth_token', 'email_validated_at']);
+
+        $this->rateLimiter->clear();
 
         $session = $this->request->getAttribute('session');
         $session->regenerateId();
@@ -187,8 +196,7 @@ final class AuthController
             throw new Exception();
         }
 
-        $this->queryBuilder->reset()
-            ->table('password_resets')
+        QueryBuilder::make('password_resets')
             ->upsertSingle([
                 'user_id' => $user->id, // key
                 'user_email' => $user->email,
@@ -214,6 +222,8 @@ final class AuthController
      */
     public function doResetPassword(): Response
     {
+        $this->rateLimiter->hitAndTrow();
+
         $formData = $this->getValidatedBody([
             'password' => ['string', 'min:8'],
             'password_confirm' => ['same-as:password'],
@@ -221,8 +231,8 @@ final class AuthController
         ], ['password_confirm']);
 
         /** @var null|array<string, int|string> $passwordResetData */
-        $passwordResetData = $this->queryBuilder
-            ->table('password_resets')
+
+        $passwordResetData = QueryBuilder::make('password_resets')
             ->where('token', '=', $formData['token'])
             ->where('created_at', '>=', (new DateTime())->subHours(2)->toDateTimeString())
             ->selectSingle();
@@ -234,16 +244,17 @@ final class AuthController
             return new Response(); // error, return view
         }
 
-        $this->queryBuilder->reset()
-            ->table('password_resets')
+        QueryBuilder::make('password_resets')
             ->where('token', '=', $passwordResetData['token'])
             ->delete();
 
         $this->userRepo->whereKey($passwordResetData['user_id'])
             ->update([
-                'password' => User::hashPassword($formData['password']),
+                'password' => $this->userRepo->hashPassword($formData['password']),
                 'auth_token' => null,
             ]);
+
+        $this->rateLimiter->clear();
 
         return new Response(); // redirect to the view
     }

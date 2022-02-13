@@ -7,10 +7,16 @@ namespace FlorentPoujol\Smol\Site\app\Repositories;
 use FlorentPoujol\Smol\Components\Database\QueryBuilder;
 use PDO;
 
+/**
+ * @template EntityType of object
+ */
 abstract class PdoRepository
 {
     protected string $table;
+
+    /** @var class-string<EntityType> */
     protected string $entityFqcn;
+
     protected string $primaryKey = 'id';
 
     public function __construct(
@@ -25,11 +31,17 @@ abstract class PdoRepository
             ->hydrate($this->entityFqcn);
     }
 
+    /**
+     * @return null|EntityType
+     */
     public function find(mixed $value, string $key = null): ?object
     {
         return $this->getQueryBuilder()->where($key ?? $this->primaryKey, '=', $value)->selectSingle();
     }
 
+    /**
+     * @param EntityType $entity
+     */
     public function insert(object $entity): bool
     {
         $qb = $this->getQueryBuilder();
@@ -42,6 +54,10 @@ abstract class PdoRepository
         return $success;
     }
 
+    /**
+     * @param EntityType    $entity
+     * @param array<string> $keys
+     */
     public function update(object $entity, array $keys = []): bool
     {
         $array = (array) $entity;

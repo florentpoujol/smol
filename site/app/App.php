@@ -21,12 +21,15 @@ use Redis;
 
 final class App
 {
+    public static self $instance;
     public readonly Container $container;
     public readonly string $baseAppPath;
     public readonly string $environment;
 
     public function __construct(string $baseAppPath, string $environment)
     {
+        self::$instance = $this;
+
         $this->container = new Container();
 
         $path = realpath($baseAppPath);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FlorentPoujol\Smol\Components\Database;
 
 use FlorentPoujol\Smol\Infrastructure\Exceptions\SmolException;
+use FlorentPoujol\Smol\Site\app\App;
 use PDO;
 use ReflectionClass;
 use ReflectionException;
@@ -15,6 +16,23 @@ use Stringable;
  */
 final class QueryBuilder
 {
+    private static ?PDO $_pdo = null;
+
+    public static function make(string $table = null): self
+    {
+        if (self::$_pdo === null) {
+            self::$_pdo = App::$instance->container->get(PDO::class);
+        }
+
+        $qb = new QueryBuilder(self::$_pdo);
+
+        if ($table !== null) {
+            $qb->table($table);
+        }
+
+        return $qb;
+    }
+
     public function __construct(
         private PDO $pdo
     ) {

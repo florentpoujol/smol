@@ -16,8 +16,14 @@ final class CacheRateLimiterFactory
     ) {
     }
 
-    public function makeFromConfig(string $configKey): CacheRateLimiter
+    /**
+     * @param string $uniqueKey Something beside the key from the config to uniquely scope this rate limiter like a user's email or IP address
+     */
+    public function makeFromConfig(string $configKey, string $uniqueKey): CacheRateLimiter
     {
-        return new CacheRateLimiter($this->cache, ...$this->config->get("app.rate_limiters.$configKey"));
+        $args = $this->config->get("app.rate_limiters.$configKey");
+        $args['name'] .= ":$uniqueKey";
+
+        return new CacheRateLimiter($this->cache, ...$args);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Components\Cache;
 
+use Exception;
+
 final class CacheRateLimiter
 {
     private string $cacheKey;
@@ -32,6 +34,13 @@ final class CacheRateLimiter
 
         // using a closure here instead of [$this, 'hitFixedWindow'] because the method is private
         return (bool) $this->fixedWindowLock->wait(2, fn () => $this->hitFixedWindow());
+    }
+
+    public function hitAndTrow(): void
+    {
+        if (! $this->hitIsAllowed()) {
+            throw new Exception();
+        }
     }
 
     private function hitFixedWindow(): bool
