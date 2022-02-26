@@ -9,9 +9,9 @@ use UnexpectedValueException;
 abstract class Identifier implements IdentifierInterface
 {
     /** @var string A binary string */
-    protected string $binary;
+    private string $binary;
 
-    abstract protected function generate(): void;
+    abstract protected function generate(): string;
 
     private function __construct()
     {
@@ -32,19 +32,11 @@ abstract class Identifier implements IdentifierInterface
     public function getUuid(): string
     {
         $hex = bin2hex($this->binary);
-        if (strlen($hex) !== 16) {
+        if (strlen($hex) !== 32) {
             throw new UnexpectedValueException("Hexadecimal version of this identifier '$hex' is not 32 chars long.");
         }
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
-    }
-
-    /**
-     * @return int Return the identifier as an integer. If the identifier is more than 8 butes, returns 0.
-     */
-    public function getInteger(): int
-    {
-        return bindec($this->binary);
     }
 
     // --------------------------------------------------
@@ -52,23 +44,15 @@ abstract class Identifier implements IdentifierInterface
     public static function make(): static
     {
         $uuid = new static();
-        $uuid->generate();
+        $uuid->binary = $uuid->generate();
 
         return $uuid;
     }
 
-    public static function fromString(string $uuid): static
+    public static function fromString(string $id): static
     {
         $instance = new static();
-        $instance->binary = hex2bin(str_replace('-', '', $uuid));
-
-        return $instance;
-    }
-
-    public static function fromInteger(int $decimal): static
-    {
-        $instance = new static();
-        $instance->binary = decbin($decimal);
+        $instance->binary = hex2bin(str_replace('-', '', $id));
 
         return $instance;
     }

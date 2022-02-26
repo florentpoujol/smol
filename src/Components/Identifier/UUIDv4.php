@@ -9,11 +9,11 @@ namespace FlorentPoujol\Smol\Components\Identifier;
  */
 final class UUIDv4 extends Identifier
 {
-    public function generate(): void
+    public function generate(): string
     {
         $hex = bin2hex(random_bytes(16));
         $hex[12] = '4';
 
-        $this->binary = hex2bin($hex);
+        return hex2bin($hex);
     }
 }

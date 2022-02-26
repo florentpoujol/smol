@@ -9,16 +9,22 @@ namespace FlorentPoujol\Smol\Components\Identifier;
  */
 final class TimeBased8 extends Identifier
 {
-    protected function generate(): void
+    protected function generate(): string
     {
-        $times = explode(' ', microtime(), 2);
-        // microtime() return something like "0.21080700 1645782542"
-        // microtime(true) return something like "1645782542.210800" (with the last 2 digits always zero)
+        $time = gettimeofday();
+        $hexTime = '0' . dechex((int) ($time['sec'] . $time['usec']));
+        // as of 2022, and until 2112, the hex version of the microtimestamp is 13 chars long, so we pad it here to 14
 
-        $hexTime = dechex((int) ($times[1] . substr($times[0], 2, 6)));
-        // as of 2022, and until 2112, $hexTime is 13 chars long
-        $hexTime = str_pad($hexTime, 14, '0', STR_PAD_LEFT);
+        return hex2bin($hexTime) . random_bytes(1);
+    }
 
-        $this->binary = hex2bin($hexTime) . random_bytes(1);
+    public function getInteger(): int
+    {
+        return hexdec($this->getHex());
+    }
+
+    public static function fromInteger(int $id): static
+    {
+        return self::fromString(str_pad(dechex($id), 16, '0', STR_PAD_LEFT));
     }
 }
