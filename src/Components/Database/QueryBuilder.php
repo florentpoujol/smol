@@ -24,7 +24,7 @@ final class QueryBuilder
             self::$_pdo = App::$instance->container->get(PDO::class);
         }
 
-        $qb = new QueryBuilder(self::$_pdo);
+        $qb = new self(self::$_pdo);
 
         if ($table !== null) {
             $qb->table($table);

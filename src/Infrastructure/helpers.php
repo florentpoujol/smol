@@ -128,7 +128,7 @@ function getRandomString(int $length = 10, string $prefix = ''): string
     if (function_exists('sodium_bin2base64')) {
         $string = sodium_bin2base64(random_bytes($length * 2), SODIUM_BASE64_VARIANT_ORIGINAL_NO_PADDING);
 
-        return substr($prefix . str_replace(['/', '+', '='], '',$string),0, $length);
+        return substr($prefix . str_replace(['/', '+', '='], '', $string), 0, $length);
     }
 
     return substr($prefix . str_replace(['/', '+', '='], '', base64_encode(random_bytes($length * 2))), 0, $length);
