@@ -4,6 +4,38 @@ The identifier component allows to easily generate (universally) unique identifi
 
 ## Available identifiers
 
+### UUID v1
+
+You can create a standard UUID v1 like so:
+```php
+$uuid = UUIDv1::make();
+
+$uuid->getUuid(); // ie: 7db6a770-b383-11b2-2e8d-024245e26f1b
+$uuid->getHex(); // ie: 7db6a770b38311b22e8d024245e26f1b
+```
+
+You can also create a UUID objects from a pre-existing string instead of generating a new one:
+```php
+$uuid = UUIDv1::fromString('7db6a770-b383-11b2-2e8d-024245e26f1b');
+$uuid = UUIDv1::fromString('7db6a770b38311b22e8d024245e26f1b');
+```
+
+The "node" is the last 12 characters (last 6 bytes) and should actually be the MAC address of the computer where the UUID is generated, so that it is always the same and different from every other UUIDv1 generated from other computers.  
+
+Finding the MAC address requires some utilities to be installed on the computer:
+- `ipconfig` on Windows
+- `ifconfig` on Darwin
+- `netstat` on all others OS
+
+But you can also manually set a node via the `UUIDv1::setNode(?string $node)` method, or set the node from a callable to be set via the `UUIDv1::setNodeProvider(?callable $provider)`.  
+The node must be provided as a 12 character hexadecimal string.
+
+If the MAC address can't be resolved and no node provider is given, the node will be generated randomly the first time one is needed. Further UUID v1 generation wil reuse the same node. 
+
+Also notes on the implementation :
+- timestamp is only precise up to the microsecond and not up to the tens of a micro second 
+- the clock sequence is random
+
 ### UUID v4
 
 You can create a standard UUID v4 like so:
@@ -40,7 +72,7 @@ $uuid = TimeBased8::fromInteger(421342637010161394);
 
 As of February 2022 the value is still small enough to be stored on a signed 8 bytes integer.
 
-Unlike UUID v1, since the time component is at the beginning, they are indexing friendly and so can be good candidate for database primary keys.
+Unlike UUID v1, since the timestamp's bits  are in the"regular/hi mid low" order (hte bits that changes the most are toward the end), they are indexing friendly ([without shenanigans](https://stitcher.io/blog/optimised-uuids-in-mysql#it-becomes-even-better!)) and so can be good candidate for database primary keys.
 
 ### TimeBased16
 
