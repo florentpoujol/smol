@@ -6,5 +6,6 @@ namespace FlorentPoujol\Smol\Components\DateTime;
 
 final class DateTimeImmutable extends \DateTimeImmutable
 {
-    use ImmutableDateTimeTrait;
+    use DateTimeGettersTrait;
+    use DateTimeMutatorsTrait;
 }

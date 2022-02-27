@@ -10,7 +10,7 @@ use DateTimeZone;
 /**
  * Methods that do not change the state of the DateTime object, shared with both the mutable and immutable datetimes.
  */
-trait ImmutableDateTimeTrait
+trait DateTimeGettersTrait
 {
     // --------------------------------------------------
     // get
@@ -212,7 +212,6 @@ trait ImmutableDateTimeTrait
     }
 
     // --------------------------------------------------
-    //
 
     public function toDateString(): string
     {
