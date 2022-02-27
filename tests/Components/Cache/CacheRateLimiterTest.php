@@ -41,7 +41,7 @@ final class CacheRateLimiterTest extends TestCase
     public function test_sliding_window(): void
     {
         // arrange
-        $rl = new CacheRateLimiter(new ArrayCache(), 'test_rate_limiter', 2, 3, true);
+        $rl = new CacheRateLimiter(new ArrayCache(), 'test_rate_limiter', 2, 1, true);
 
         self::assertSame(2, $rl->remainingHitsInWindow());
         self::assertSame(0, $rl->remainingTimeInSeconds());

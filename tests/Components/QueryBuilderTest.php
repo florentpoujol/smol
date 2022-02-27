@@ -62,7 +62,7 @@ final class QueryBuilderTest extends TestCase
         assert($statement instanceof PDOStatement); // for PHPStan
 
         $entry = $statement->fetch();
-        self::assertSame('1', $entry['id']);
+        self::assertSame(1, $entry['id']);
         self::assertSame('Florent', $entry['name']);
         self::assertSame('flo@flo.fr', $entry['email']);
         self::assertSame('2021-11-06 21:27:00', $entry['created_at']);
@@ -99,7 +99,7 @@ final class QueryBuilderTest extends TestCase
         self::assertSame('flo@flo2.fr', $entries[0]['email']);
 
         self::assertTrue(isset($entries[0]['id']));
-        self::assertSame($qb->getPdo()->lastInsertId(), $entries[1]['id']);
+        self::assertSame((int) $qb->getPdo()->lastInsertId(), $entries[1]['id']);
         self::assertSame('Florent3', $entries[1]['name']);
         self::assertSame('flo@flo3.fr', $entries[1]['email']);
     }
@@ -176,7 +176,7 @@ final class QueryBuilderTest extends TestCase
         assert($statement instanceof PDOStatement); // for PHPStan
 
         $entry = $statement->fetch();
-        self::assertSame('1', $entry['id']);
+        self::assertSame(1, $entry['id']);
         self::assertSame('Florent', $entry['name']);
         self::assertSame('flo@flo.fr', $entry['email']);
         self::assertSame('2021-11-06 21:27:00', $entry['created_at']);
@@ -206,7 +206,7 @@ final class QueryBuilderTest extends TestCase
         assert($statement instanceof PDOStatement); // for PHPStan
 
         $entry = $statement->fetch();
-        self::assertSame('1', $entry['id']);
+        self::assertSame(1, $entry['id']);
         self::assertSame('Florent', $entry['name']);
         self::assertSame('flo@flo.fr', $entry['email']);
         self::assertSame('2021-11-06 21:27:00', $entry['created_at']);

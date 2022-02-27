@@ -70,7 +70,7 @@ final class CacheRateLimiter
     {
         // for the sliding window, we create one cache entry **per hit**, for the duration of the window,
         // so that we just have to count the number of non-expired hits
-        $this->cache->set(uniqid($this->cacheKey, true), time(), $this->windowSizeInSeconds);
+        $this->cache->set(uniqid($this->cacheKey . ':', true), time(), $this->windowSizeInSeconds);
 
         $hitCount = count($this->cache->keys($this->cacheKey));
 

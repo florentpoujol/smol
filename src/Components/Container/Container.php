@@ -141,7 +141,7 @@ final class Container implements ContainerInterface
      */
     public function make(string $abstract, array $extraArguments = []): ?object
     {
-        if (! isset($this->singletonBindings[$abstract], $this->bindings[$abstract])) {
+        if (! isset($this->singletonBindings[$abstract]) && ! isset($this->bindings[$abstract])) {
             if (class_exists($abstract)) {
                 return $this->createObject($abstract, $extraArguments);
             }
