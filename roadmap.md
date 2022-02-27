@@ -56,3 +56,7 @@ Translation repository:
 Framework: 
 - deprecate "at string" in favor of ['FQCN', 'non static method name']
 - actually build something with it
+
+Identifier: tests et doc OK
+
+Encrypter: tests et doc OK

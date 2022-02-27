@@ -32,3 +32,6 @@ parameters:
         -
             path: ./src/Components/FileSystem/FtpFileSystem.php
             message: '#Parameter \#1 \$ftp of function ftp_.+ expects resource, FTP\\Connection.+given#'
+        -
+            path: ./src/Components/Identifier/Identifier.php
+            message: '#Unsafe usage of new static#'
