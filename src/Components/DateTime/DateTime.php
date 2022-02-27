@@ -246,10 +246,15 @@ final class DateTime extends \DateTime
         $year = $this->getYear();
         $month = $this->getMonth() - $months;
 
-        if ($month > 12) {
-            $diffYear = (int) ($month / 12);
+        if ($month < 0) {
+            $diffYear = (int) ($months / 12);
             $year -= $diffYear;
-            $month -= $diffYear * 12;
+            $month = $this->getMonth() - ($months - 12 * $diffYear);
+
+            if ($month < 0) {
+                --$year;
+                $month = 12 + $month;
+            }
         }
 
         $day = $this->getDay();
