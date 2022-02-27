@@ -157,9 +157,13 @@ trait ImmutableDateTimeTrait
     // --------------------------------------------------
     // isSame
 
-    public function isSameSecond(int $second): bool
+    public function isSameSecond(int|DateTimeInterface $second): bool
     {
-        return $this->getTimestamp() === $second;
+        if (is_int($second)) {
+            return (int) $this->format('s') === $second;
+        }
+
+        return $this->format('s') === $second->format('s');
     }
 
     public function isSameMinute(int|DateTimeInterface $minute): bool

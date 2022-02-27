@@ -125,4 +125,45 @@ final class DateTimeImmutableTest extends TestCase
         self::assertFalse($after->isCurrentMonth());
         self::assertFalse($after->isCurrentYear());
     }
+
+    public function test_is_same(): void
+    {
+        $now = new DateTimeImmutable();
+        self::assertTrue($now->isSameSecond($now->getSecond()));
+        self::assertTrue($now->isSameMinute($now->getMinute()));
+        self::assertTrue($now->isSameHour($now->getHour()));
+        self::assertTrue($now->isSameDay($now->getDay()));
+        self::assertTrue($now->isSameMonth($now->getMonth()));
+        self::assertTrue($now->isSameYear($now->getYear()));
+
+        $before = $now->setDate(
+            $now->getYear() - 1,
+            $now->getMonth(),
+            $now->getDay(),
+        );
+        // these tests will fail on february 29th...
+        self::assertTrue($now->isSameMinute($before));
+        self::assertTrue($now->isSameHour($before));
+        self::assertTrue($now->isSameDay($before));
+        self::assertTrue($now->isSameMonth($before));
+        self::assertFalse($now->isSameYear($before));
+
+        $after = $now->modify('+32 days');
+        self::assertTrue($now->isSameSecond($after));
+        self::assertTrue($now->isSameMinute($after));
+        self::assertTrue($now->isSameHour($after));
+        self::assertFalse($now->isSameDay($after));
+        self::assertFalse($now->isSameMonth($after));
+        self::assertTrue($now->isSameYear($after));
+    }
+
+    public function test_to(): void
+    {
+        $dt = new DateTimeImmutable('2022-02-27 12:18:00.123456+02:00');
+
+        self::assertSame('2022-02-27', $dt->toDateString());
+        self::assertSame('2022-02-27 12:18:00', $dt->toDateTimeString());
+        self::assertSame('2022-02-27T12:18:00+02:00', $dt->toIso8601String());
+        self::assertSame('2022-02-27T10:18:00Z', $dt->toIso8601ZuluString());
+    }
 }
