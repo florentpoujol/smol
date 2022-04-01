@@ -121,12 +121,19 @@ You can also validate values with the `Validates` attributes.
 final class MyConfig extends AbstractConfig
 {
     #[Env('SOME_ENV_VAR')]
-    public string $key;
+    public readonly string $key;
     
     #[Env('SOME_OTHER_ENV_VAR')]
     #[Validates(['minLength:5'])]
     public string $otherKey = 'default value';
 }
+```
+
+Default values can also be set as the second argument of the Env attribute, which allows you to not set it on the property itself, and thus allows you to mark it readonly:
+```php
+#[Env('SOME_OTHER_ENV_VAR', 'default value')]
+#[Validates(['minLength:5'])]
+public readonly string $otherKey;
 ```
 
 To get an instance of that class with the properties properly filled with their default value or the one from the environment, call the static `make()` method that returns a singleton.

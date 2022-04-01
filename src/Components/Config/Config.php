@@ -35,10 +35,14 @@ abstract class Config
                     continue;
                 }
 
-                $envVarName = $attribute->getArguments()[0];
+                $arguments = $attribute->getArguments();
+                $envVarName = $arguments[0];
                 $envVarValue = env($envVarName);
-                if ($envVarValue !== null) {
-                    $property->setValue($instance, $envVarValue);
+
+                $defaultValue = $arguments[1] ?? null; // note that the default value can also be set as the regular property default value
+
+                if ($envVarValue !== null || $defaultValue !== null) {
+                    $property->setValue($instance, $envVarValue ?? $defaultValue);
                 }
             }
         }

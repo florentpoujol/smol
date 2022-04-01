@@ -140,7 +140,7 @@ final class MyConfig extends Config
     #[Env('TEST_KEY')]
     public string $key;
 
-    #[Env('TEST_OTHER_KEY')]
+    #[Env('TEST_OTHER_KEY', 'default value')]
     #[Validates(['minLength:5'])]
-    public string $otherKey = 'default value';
+    public string $otherKey;
 }

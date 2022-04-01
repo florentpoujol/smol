@@ -10,7 +10,8 @@ use Attribute;
 final class Env
 {
     public function __construct(
-        public string $envVarName
+        public string $envVarName,
+        public mixed $defaultValue = null,
     ) {
     }
 }
