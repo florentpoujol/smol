@@ -15,7 +15,7 @@ $validator = (new Validator())
         'array' => [1, 2],
     ])
     ->setRules([
-        'int' => ['required', 'int'],
+        'int' => ['no-null', 'int'],
         'uuid' => ['uuid'],
         'email' => ['email'],
         'in' => ['in:1,2,3'],
@@ -38,8 +38,6 @@ abstract class BaseDTO
     /**
      * @param array<string, array<callable|string|RuleInterface> $rules
      * 
-     * @return void|never-returns 
-     * 
      * @throws ValidationException 
      */
     protected function validate(array $rules): void
@@ -54,25 +52,13 @@ abstract class BaseDTO
 final class MyDTO extends BaseDTO
 {
     public function __construct(
-        private string $stringProp,
-        private array $arrayProp = [],
+        public string $date,
+        public array $arrayProp = [],
     ) {
         $this->validate([
-            'stringProp' => ['date', fn (string $key, string $value): bool => preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $value) === 1], // note that this can be achieved with the regex: rule and that the regex is slightly wrong if we want to validate the date format
-            'arrayProp' => [''],
+            'date' => ['date', fn (string $key, string $value): bool => preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $value) === 1], // note that this can be achieved with the regex: rule and that the regex is slightly wrong if we want to validate the date format
+            'email' => ['email', 'min-length:5', 'max-length:50'],
         ]);
-        
-        // all good
-    }
-    
-    public function getStringProp(): string
-    {
-        return $this->stringProp;
-    }
-    
-    public function getArrayProp(): array
-    {
-        return $this->arrayProp;
     }
 }
 
@@ -155,3 +141,43 @@ Some rules can take one or several parameters, when separated by a semicolon.
 `==`, `===` : the value must be equal (`==`) or strictly equal (`===`) to the provided parameter, without any explicit casting.
 
 `>`, `>=`, `<`, `<=` : the value is compared to the provided parameter, without any explicit casting.
+
+## Defining object properties validation with attribute
+
+The second example above show how to use the validator by passing an object instance and then an array that contain the properties to validate and their rules.
+
+Using the Validates attribute, it is possible to just pass the object instance. The validator will introspect the validation rules with the attributes.  
+
+Non-nullable typed properties are always considered required even without expressly adding the `not-null` rule and will throw a validation exception if not initialized.  
+Non-typed or nullable typed properties are always considered nullable even without expressly adding the `optional` rule.  
+
+The same example can be rewritten like so: 
+```php
+abstract class BaseDTO 
+{
+    /**
+     * @throws ValidationException 
+     */
+    public function __construct() 
+    {
+        (new Validator())
+            ->setData($this)
+            ->throwIfNotValid();
+    }
+}
+
+final class MyDTO extends BaseDTO
+{
+    public function __construct(
+        #[Validates(['date', 'regex' => '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/'])]
+        private string $date,
+        
+        #[Validates(['email', 'min-length' => 5, 'max-length' => 50])]
+        private ?string $email = null,
+    ) {
+        parent::__construct();
+    }
+}
+
+new MyDTO('2021-11-23');
+```

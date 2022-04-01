@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Components\Validation;
 
-use Exception;
+use Error;
+use LogicException;
+use ReflectionClass;
 use ReflectionProperty;
 use stdClass;
 use UnexpectedValueException;
@@ -127,6 +129,10 @@ final class Validator
 
     private function validate(): void
     {
+        if ($this->objectData !== null && $this->rules === []) {
+            $this->introspectPropertyRules();
+        }
+
         foreach ($this->rules as $key => $rules) {
             foreach ($rules as $rule) {
                 if ($rule === 'optional') {
@@ -183,6 +189,54 @@ final class Validator
         $this->isValidated = true;
     }
 
+    /**
+     * When the validated data is an object and no validation rules are passed to the validator,
+     * find them via the Validates attributes on the object's properties.
+     */
+    private function introspectPropertyRules(): void
+    {
+        assert($this->objectData !== null);
+
+        $properties = (new ReflectionClass($this->objectData))->getProperties();
+        foreach ($properties as $property) {
+            foreach ($property->getAttributes() as $attribute) {
+                if ($attribute->getName() === Validates::class) {
+                    continue;
+                }
+
+                $rules = $attribute->getArguments();
+                $type = $property->getType();
+                // not typed: can be optional or not-null
+                // typed not nullable: can only be not-null
+                // typed nullable: can only be optional
+
+                if ($type === null && ! in_array('optional', $rules, true) && ! in_array('not-null', $rules, true)) {
+                    array_unshift($rules, 'optional');
+                } elseif ($type !== null) {
+                    if ($type->allowsNull()) {
+                        if (in_array('not-null', $rules, true)) {
+                            $name = $property->getName();
+                            $fqcn = $this->objectData::class;
+
+                            throw new LogicException("Property '$name' on instance of '$fqcn', can't be both typed-nullable and has the 'not-null' validation rule.");
+                        }
+
+                        if (! in_array('optional', $rules, true)) {
+                            array_unshift($rules, 'optional');
+                        }
+                    } elseif (in_array('optional', $rules, true)) {
+                        $name = $property->getName();
+                        $fqcn = $this->objectData::class;
+
+                        throw new LogicException("Property '$name' on instance of '$fqcn', can't be both non-nullable and has the 'optional' validation rule.");
+                    }
+                }
+
+                $this->rules[$property->getName()] = $rules;
+            }
+        }
+    }
+
     private function getValue(string $key): mixed
     {
         if ($this->arrayData !== null) {
@@ -190,10 +244,11 @@ final class Validator
         }
 
         if ($this->objectData !== null && property_exists($this->objectData, $key)) {
-            $reflectionProperty = new ReflectionProperty($this->objectData, $key);
-            $reflectionProperty->setAccessible(true);
-
-            return $reflectionProperty->getValue($this->objectData);
+            try {
+                return (new ReflectionProperty($this->objectData, $key))->getValue($this->objectData); // using reflection to get values from protected/private properties
+            } catch (Error) {
+                // probably uninitialized typed properties
+            }
         }
 
         return null;
@@ -235,7 +290,7 @@ final class Validator
             case 'date': return strtotime($value) !== false;
         }
 
-        throw new Exception("Unknown rule '$rule'.");
+        throw new UnexpectedValueException("Unknown rule '$rule'.");
     }
 
     private function passesParameterizedRule(mixed $value, string $rule): bool
@@ -288,6 +343,6 @@ final class Validator
             case 'same-as': return $value === $this->getValue($arg);
         }
 
-        throw new Exception("Unknown rule '$rule'.");
+        throw new UnexpectedValueException("Unknown rule '$rule'.");
     }
 }

@@ -18,9 +18,7 @@ QueryBuilder:
 - whereFields (in the doc but not in the implementation)?
 - use enums for order by
 
-DateTime: 
-- tests majoritairement à faire
-- doc à faire
+DateTime: tests et doc OK
 
 EventDispatcher: doc OK, tests à faire
 
