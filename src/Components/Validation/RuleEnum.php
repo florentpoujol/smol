@@ -6,7 +6,9 @@ namespace FlorentPoujol\Smol\Components\Validation;
 
 /**
  * Enums that are validation rules.
+ *
+ * @property-read string $value
  */
-interface ValidationRule
+interface RuleEnum
 {
 }

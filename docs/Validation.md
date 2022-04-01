@@ -169,10 +169,10 @@ abstract class BaseDTO
 final class MyDTO extends BaseDTO
 {
     public function __construct(
-        #[Validates(['date', 'regex' => '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/'])]
+        #[Validates([Rule::date, 'regex' => '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/'])]
         private string $date,
         
-        #[Validates(['email', 'min-length' => 5, 'max-length' => 50])]
+        #[Validates(['email', 'minLength' => 5, 'maxLength' => 50])]
         private ?string $email = null,
     ) {
         parent::__construct();

@@ -18,8 +18,8 @@ final class Validator
 
     private ?object $objectData = null;
 
-    /** @var array<string, array<string|callable|RuleInterface>> */
-    private array $rules;
+    /** @var array<string, array<string|callable|RuleEnum|RuleInterface>> */
+    private array $rules = [];
 
     /** @var array<string, array<string>> The keys match the one found in the values */
     private array $messages = [];
@@ -48,7 +48,7 @@ final class Validator
     }
 
     /**
-     * @param array<string, array<string|callable|RuleInterface>> $rules
+     * @param array<string, array<string|callable|RuleEnum|RuleInterface>> $rules
      */
     public function setRules(array $rules): self
     {
@@ -127,14 +127,20 @@ final class Validator
         throw new UnexpectedValueException('Can not ');
     }
 
-    private function validate(): void
+    public function validate(): self
     {
         if ($this->objectData !== null && $this->rules === []) {
             $this->introspectPropertyRules();
         }
 
         foreach ($this->rules as $key => $rules) {
-            foreach ($rules as $rule) {
+            foreach ($rules as $i => $rule) {
+                if (is_string($i)) {
+                    $rule = "$i:$rule"; // TODO remove completely the "rule:param" notation to force using the "key => value"
+                } elseif ($rule instanceof RuleEnum) {
+                    $rule = $rule->value;
+                }
+
                 if ($rule === Rule::optional->value) {
                     if ($this->getValue($key) === null) {
                         break; // do not evaluate further rules for that key/property
@@ -187,6 +193,8 @@ final class Validator
         }
 
         $this->isValidated = true;
+
+        return $this;
     }
 
     /**
@@ -200,35 +208,48 @@ final class Validator
         $properties = (new ReflectionClass($this->objectData))->getProperties();
         foreach ($properties as $property) {
             foreach ($property->getAttributes() as $attribute) {
-                if ($attribute->getName() === Validates::class) {
+                if ($attribute->getName() !== Validates::class) {
                     continue;
                 }
 
-                $rules = $attribute->getArguments();
+                $rules = $attribute->getArguments()[0] ?? [];
+                assert(is_array($rules));
+                foreach ($rules as $i => $rule) {
+                    if ($rule instanceof RuleEnum) {
+                        $rules[$i] = $rule->value;
+                    }
+                }
+
                 $type = $property->getType();
                 // not typed: can be optional or not-null
                 // typed not nullable: can only be not-null
                 // typed nullable: can only be optional
 
-                if ($type === null && ! in_array('optional', $rules, true) && ! in_array('not-null', $rules, true)) {
-                    array_unshift($rules, 'optional');
+                if ($type === null && ! in_array(Rule::optional->value, $rules, true) && ! in_array('not-null', $rules, true)) {
+                    array_unshift($rules, Rule::optional->value);
                 } elseif ($type !== null) {
                     if ($type->allowsNull()) {
-                        if (in_array('not-null', $rules, true)) {
+                        if (in_array(Rule::notNull->value, $rules, true)) {
                             $name = $property->getName();
                             $fqcn = $this->objectData::class;
 
                             throw new LogicException("Property '$name' on instance of '$fqcn', can't be both typed-nullable and has the 'not-null' validation rule.");
                         }
 
-                        if (! in_array('optional', $rules, true)) {
-                            array_unshift($rules, 'optional');
+                        if (! in_array(Rule::optional->value, $rules, true)) {
+                            array_unshift($rules, Rule::optional->value);
                         }
-                    } elseif (in_array('optional', $rules, true)) {
-                        $name = $property->getName();
-                        $fqcn = $this->objectData::class;
+                    } else {
+                        if (in_array(Rule::optional->value, $rules, true)) {
+                            $name = $property->getName();
+                            $fqcn = $this->objectData::class;
 
-                        throw new LogicException("Property '$name' on instance of '$fqcn', can't be both non-nullable and has the 'optional' validation rule.");
+                            throw new LogicException("Property '$name' on instance of '$fqcn', can't be both non-nullable and has the 'optional' validation rule.");
+                        }
+
+                        if (! in_array(Rule::notNull->value, $rules, true)) {
+                            array_unshift($rules, Rule::notNull->value);
+                        }
                     }
                 }
 

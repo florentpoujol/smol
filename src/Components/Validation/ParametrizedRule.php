@@ -6,7 +6,7 @@ namespace FlorentPoujol\Smol\Components\Validation;
 
 use Stringable;
 
-enum ParametrizedRule: string implements ValidationRule
+enum ParametrizedRule: string implements RuleEnum
 {
     case instanceof = 'instanceof';
     case regex = 'regex';

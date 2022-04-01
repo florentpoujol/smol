@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Components\Validation;
 
-enum Rule: string implements ValidationRule
+enum Rule: string implements RuleEnum
 {
     // misc
     case date = 'date';

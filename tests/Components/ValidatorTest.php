@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Tests\Components;
 
+use FlorentPoujol\Smol\Components\Validation\Rule;
 use FlorentPoujol\Smol\Components\Validation\RuleInterface;
+use FlorentPoujol\Smol\Components\Validation\Validates;
 use FlorentPoujol\Smol\Components\Validation\Validator;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use stdClass;
@@ -142,18 +145,18 @@ final class ValidatorTest extends TestCase
                 '<=' => ['<=:12'],
                 '<' => ['<:13'],
 
-                'minlength_string' => ['min-length:2'],
-                'minlength_countable' => ['min-length:2'],
-                'maxlength_string' => ['max-length:2'],
-                'maxlength_countable' => ['max-length:2'],
+                'minlength_string' => ['minLength:2'],
+                'minlength_countable' => ['minLength:2'],
+                'maxlength_string' => ['maxLength:2'],
+                'maxlength_countable' => ['maxLength:2'],
                 'length_string' => ['length:2'],
                 'length_countable' => ['length:2'],
 
                 '==' => ['==:12'],
                 '===' => ['===:12'],
 
-                'same-as' => ['same-as:regex'],
-                'same-as2' => ['same-as:=='],
+                'same-as' => ['sameAs:regex'],
+                'same-as2' => ['sameAs:=='],
             ]);
 
         $isValid = $validator->isValid();
@@ -237,6 +240,58 @@ final class ValidatorTest extends TestCase
         self::assertNotSame($initialData, $validatedData);
         self::assertNotSame($expected, $validatedData);
     }
+
+    public function test_validates_attribute_typed_not_initialized(): void
+    {
+        $validator = (new Validator())
+            ->setData(new TestValidatesAttributeTypedNotInitialized());
+
+        self::assertFalse($validator->isValid());
+
+        $expected = [
+            'typedNotInitialized' => ["The value for 'typedNotInitialized' doesn't pass the 'not-null' validation rule."],
+        ];
+        $actual = $validator->getMessages();
+        self::assertSame($expected, $actual);
+    }
+
+    public function test_validates_attribute_typed_non_nullable_marked_optional(): void
+    {
+        $this->expectException(LogicException::class);
+
+        (new Validator())
+            ->setData(new TestValidatesAttributeTypedNonNullableMarkedOptional())
+            ->isValid();
+    }
+
+    public function test_validates_attribute_typed_nullable_marked_not_null(): void
+    {
+        $this->expectException(LogicException::class);
+
+        (new Validator())
+            ->setData(new TestValidatesAttributeTypedNullableMarkedNotNull())
+            ->isValid();
+    }
+
+    public function test_validates_attribute(): void
+    {
+        $data = new TestValidatesAttribute();
+        $data->date = '2022-04-01';
+        $data->email = 'florent@florent.fr';
+        $validator = (new Validator())->setData($data);
+        self::assertTrue($validator->isValid());
+
+        $data = new TestValidatesAttribute();
+        $data->date = '2022-04-01';
+        $validator = (new Validator())->setData($data);
+        self::assertTrue($validator->isValid());
+
+        $data = new TestValidatesAttribute();
+        $data->date = '2022-04-01';
+        $data->email = 'not an email';
+        $validator = (new Validator())->setData($data);
+        self::assertFalse($validator->isValid());
+    }
 }
 
 final class TestEntityToValidate
@@ -283,4 +338,31 @@ final class TestRule implements RuleInterface
     {
         return 'Some message';
     }
+}
+
+final class TestValidatesAttributeTypedNotInitialized
+{
+    #[Validates]
+    public string $typedNotInitialized;
+}
+
+final class TestValidatesAttributeTypedNonNullableMarkedOptional
+{
+    #[Validates([Rule::optional])]
+    public string $typedNonNullableMarkedOptional; // throws LogicException because illugical
+}
+
+final class TestValidatesAttributeTypedNullableMarkedNotNull
+{
+    #[Validates([Rule::notNull])]
+    public ?string $typedNullableMarkedNotNull = null; // throws LogicException because illugical
+}
+
+final class TestValidatesAttribute
+{
+    #[Validates([Rule::date, 'regex' => '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/'])]
+    public string $date;
+
+    #[Validates([Rule::email, 'minLength' => 5, 'maxLength' => 50])]
+    public ?string $email = null;
 }
