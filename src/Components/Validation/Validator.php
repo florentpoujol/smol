@@ -181,9 +181,24 @@ final class Validator
                         || ($this->objectData !== null && ! property_exists($this->objectData, $key))
                     ) {
                         $this->addMessage($key, null, $rule);
+
+                        break; // do not check more rules for that key, but move on with the remaining keys
                     }
 
-                    break; // do not check more rules for that key, but move on with the remaining keys
+                    continue;
+                }
+
+                if ($rule === Rule::notNull->value) {
+                    if (
+                        ($this->arrayData !== null && ! isset($key, $this->arrayData))
+                        || ($this->objectData !== null && $this->getValue($key) === null)
+                    ) {
+                        $this->addMessage($key, null, $rule);
+
+                        break; // do not check more rules for that key, but move on with the remaining keys
+                    }
+
+                    continue;
                 }
 
                 if (! $this->passeBuiltInRule($this->getValue($key), $rule)) {
@@ -300,7 +315,6 @@ final class Validator
         }
 
         switch ($rule) {
-            case Rule::notNull->value: return $value !== null;
             case Rule::uuid->value: return preg_match('/^[0-9a-f]{8}(\b-)?[0-9a-f]{4}(\b-)?[145][0-9a-f]{3}(\b-)?[0-9a-f]{4}(\b-)?[0-9a-f]{12}$/i', $value) === 1;
             case Rule::email->value:
                 return preg_match(
