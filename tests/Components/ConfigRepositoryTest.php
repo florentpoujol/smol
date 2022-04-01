@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Tests\Components;
 
+use FlorentPoujol\Smol\Components\Config\Config;
 use FlorentPoujol\Smol\Components\Config\ConfigRepository;
+use FlorentPoujol\Smol\Components\Config\Env;
+use FlorentPoujol\Smol\Components\Validation\Validates;
+use FlorentPoujol\Smol\Components\Validation\ValidationException;
 use PHPUnit\Framework\TestCase;
 use function FlorentPoujol\Smol\Infrastructure\env;
 use function FlorentPoujol\Smol\Infrastructure\read_environment_file;
@@ -97,4 +101,46 @@ final class ConfigRepositoryTest extends TestCase
         self::assertSame('lots of space', env('LOTS_OF_SPACES'));
         self::assertSame(' lots of space', env('LOTS_OF_SPACES_WITH_MARKS')); // one leading slash
     }
+
+    public function test_object_based_config(): void
+    {
+        $instance = MyConfig::make();
+        self::assertInstanceOf(MyConfig::class, $instance);
+
+        self::assertSame('default value', $instance->otherKey);
+
+        self::assertSame($instance, MyConfig::make());
+    }
+
+    public function test_object_based_config_from_env(): void
+    {
+        putenv('TEST_KEY=test');
+        putenv('TEST_OTHER_KEY=testtest');
+        MyConfig::clearInstances();
+
+        $instance = MyConfig::make();
+
+        self::assertSame('test', $instance->key);
+        self::assertSame('testtest', $instance->otherKey);
+    }
+
+    public function test_object_based_config_from_env_validation_fails(): void
+    {
+        putenv('TEST_OTHER_KEY=test');
+        MyConfig::clearInstances();
+
+        $this->expectException(ValidationException::class); // because the value of the 'otherKey' property is too short
+
+        $instance = MyConfig::make();
+    }
+}
+
+final class MyConfig extends Config
+{
+    #[Env('TEST_KEY')]
+    public string $key;
+
+    #[Env('TEST_OTHER_KEY')]
+    #[Validates(['minLength:5'])]
+    public string $otherKey = 'default value';
 }

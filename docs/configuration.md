@@ -107,3 +107,44 @@ This file returns the following config :
     ],   
 ];
 ```
+
+
+## Strong object-based configuration
+
+Beside traditional loose array-based configuration like above, you can create strictly typed, validated, object-based configuration.
+
+To do so, have a class extends the abstract `Config` class and define properties.    
+Those which value come from environment variables, can have the `Env` attribute set to the name of the env variable. 
+You can also validate values with the `Validates` attributes.
+
+```php
+final class MyConfig extends AbstractConfig
+{
+    #[Env('SOME_ENV_VAR')]
+    public string $key;
+    
+    #[Env('SOME_OTHER_ENV_VAR')]
+    #[Validates(['minLength:5'])]
+    public string $otherKey = 'default value';
+}
+```
+
+To get an instance of that class with the properties properly filled with their default value or the one from the environment, call the static `make()` method that returns a singleton.
+
+To be able to inject it via dependency injection, you can just register this `make` method as the object's factory.
+
+Ie:
+```php
+$config = MyConfig::make();
+if ($config->key === '...') {
+    // ...
+}
+
+// or
+$container->bind(MyConfig::class, 'MyConfig::make');
+
+// then in a controller or service class
+public function __construct(MyConfig $config)
+{
+}
+```
