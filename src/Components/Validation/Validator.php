@@ -135,7 +135,7 @@ final class Validator
 
         foreach ($this->rules as $key => $rules) {
             foreach ($rules as $rule) {
-                if ($rule === 'optional') {
+                if ($rule === Rule::optional->value) {
                     if ($this->getValue($key) === null) {
                         break; // do not evaluate further rules for that key/property
                     }
@@ -169,7 +169,7 @@ final class Validator
 
                 // now, the rule is a built-in string
 
-                if ($rule === 'exists') {
+                if ($rule === Rule::exists->value) {
                     if (
                         ($this->arrayData !== null && ! array_key_exists($key, $this->arrayData))
                         || ($this->objectData !== null && ! property_exists($this->objectData, $key))
@@ -269,7 +269,7 @@ final class Validator
 
     private function passeBuiltInRule(mixed $value, string $rule): bool
     {
-        $functionName = "is_$rule"; // is_int() for instance
+        $functionName = "\is_$rule"; // is_int() for instance
         if (function_exists($functionName)) {
             return $functionName($value); // @phpstan-ignore-line
         }
@@ -279,18 +279,18 @@ final class Validator
         }
 
         switch ($rule) {
-            case 'not-null': return $value !== null;
-            case 'uuid': return preg_match('/^[0-9a-fA-F]{8}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{4}(\b-)?[0-9a-fA-F]{12}$/i', $value) === 1;
-            case 'email':
+            case Rule::notNull->value: return $value !== null;
+            case Rule::uuid->value: return preg_match('/^[0-9a-f]{8}(\b-)?[0-9a-f]{4}(\b-)?[145][0-9a-f]{3}(\b-)?[0-9a-f]{4}(\b-)?[0-9a-f]{12}$/i', $value) === 1;
+            case Rule::email->value:
                 return preg_match(
                     // from https://www.emailregex.com/
                     '/^(?!(?:(?:\x22?\x5C[\x00-\x7E]\x22?)|(?:\x22?[^\x5C\x22]\x22?)){255,})(?!(?:(?:\x22?\x5C[\x00-\x7E]\x22?)|(?:\x22?[^\x5C\x22]\x22?)){65,}@)(?:(?:[\x21\x23-\x27\x2A\x2B\x2D\x2F-\x39\x3D\x3F\x5E-\x7E]+)|(?:\x22(?:[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]|(?:\x5C[\x00-\x7F]))*\x22))(?:\.(?:(?:[\x21\x23-\x27\x2A\x2B\x2D\x2F-\x39\x3D\x3F\x5E-\x7E]+)|(?:\x22(?:[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]|(?:\x5C[\x00-\x7F]))*\x22)))*@(?:(?:(?!.*[^.]{64,})(?:(?:(?:xn--)?[a-z0-9]+(?:-[a-z0-9]+)*\.){1,126}){1,}(?:(?:[a-z][a-z0-9]*)|(?:(?:xn--)[a-z0-9]+))(?:-[a-z0-9]+)*)|(?:\[(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){7})|(?:(?!(?:.*[a-f0-9][:\]]){7,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,5})?)))|(?:(?:IPv6:(?:(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){5}:)|(?:(?!(?:.*[a-f0-9]:){5,})(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3})?::(?:[a-f0-9]{1,4}(?::[a-f0-9]{1,4}){0,3}:)?)))?(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))(?:\.(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]{2})|(?:[1-9]?[0-9]))){3}))\]))$/iD',
                     $value
                 ) === 1;
-            case 'date': return strtotime($value) !== false;
+            case Rule::date->value: return strtotime($value) !== false;
         }
 
-        throw new UnexpectedValueException("Unknown rule '$rule'.");
+        throw new UnexpectedValueException("Unknown rule '$rule'. Should be one from the Rule enum.");
     }
 
     private function passesParameterizedRule(mixed $value, string $rule): bool
@@ -304,13 +304,13 @@ final class Validator
         }
 
         switch ($rule) {
-            case 'instanceof': return $value instanceof $arg;
-            case 'regex': return preg_match($arg, $value) === 1;
-            case '>=': return $value >= $arg;
-            case '>': return $value > $arg;
-            case '<=': return $value <= $arg;
-            case '<':  return $value < $arg;
-            case 'min-length':
+            case ParametrizedRule::instanceof->value: return $value instanceof $arg;
+            case ParametrizedRule::regex->value: return preg_match($arg, $value) === 1;
+            case ParametrizedRule::superiorOrEqual->value: return $value >= $arg;
+            case ParametrizedRule::superior->value: return $value > $arg;
+            case ParametrizedRule::inferiorOrEqual->value: return $value <= $arg;
+            case ParametrizedRule::inferior->value:  return $value < $arg;
+            case ParametrizedRule::minLength->value:
                 if (is_string($value)) {
                     return strlen($value) >= (int) $arg;
                 }
@@ -319,7 +319,7 @@ final class Validator
                     return count($value) >= (int) $arg;
                 }
                 break;
-            case 'max-length':
+            case ParametrizedRule::maxLength->value:
                 if (is_string($value)) {
                     return strlen($value) <= (int) $arg;
                 }
@@ -328,7 +328,7 @@ final class Validator
                     return count($value) <= (int) $arg;
                 }
                 break;
-            case 'length':
+            case ParametrizedRule::length->value:
                 if (is_string($value)) {
                     return strlen($value) === (int) $arg;
                 }
@@ -337,12 +337,12 @@ final class Validator
                     return count($value) === (int) $arg;
                 }
                 break;
-            case '==': return $value == $arg;
-            case '===': return $value === $arg;
-            case 'in': return in_array((string) $value, $args, true);
-            case 'same-as': return $value === $this->getValue($arg);
+            case ParametrizedRule::equal->value: return $value == $arg;
+            case ParametrizedRule::strictlyEqual->value: return $value === $arg;
+            case ParametrizedRule::in->value: return in_array((string) $value, $args, true);
+            case ParametrizedRule::sameAs->value: return $value === $this->getValue($arg);
         }
 
-        throw new UnexpectedValueException("Unknown rule '$rule'.");
+        throw new UnexpectedValueException("Unknown rule '$rule'. Should be one from the ParametrizedRule enum.");
     }
 }
