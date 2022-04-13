@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FlorentPoujol\Smol\Tests\Components;
 
+use FlorentPoujol\Smol\Components\Identifier\RandomString;
 use FlorentPoujol\Smol\Components\Identifier\TimeBased16;
 use FlorentPoujol\Smol\Components\Identifier\TimeBased8;
 use FlorentPoujol\Smol\Components\Identifier\UUIDv1;
@@ -127,5 +128,14 @@ final class IdentifierTest extends TestCase
 
         $id2 = TimeBased16::fromString($id->getHex());
         self::assertSame($id->getHex(), $id2->getHex());
+    }
+
+    public function test_random_string(): void
+    {
+        for ($i = 1; $i < 999; $i += 3) {
+            $string = new RandomString($i);
+            self::assertSame($i, strlen($string->getHex()));
+            self::assertSame($i, strlen((string) $string));
+        }
     }
 }
