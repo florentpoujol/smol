@@ -20,11 +20,11 @@ final class TimeBased8 extends Identifier
 
     public function getInteger(): int
     {
-        return hexdec($this->getHex());
+        return hexdec($this->getHex()); // using bindec($this->binary) doesn't work
     }
 
-    public static function fromInteger(int $id): static
+    public static function fromInteger(int $id): self
     {
-        return self::fromString(str_pad(dechex($id), 16, '0', STR_PAD_LEFT));
+        return new self(hex2bin(str_pad(dechex($id), 16, '0', STR_PAD_LEFT)));
     }
 }

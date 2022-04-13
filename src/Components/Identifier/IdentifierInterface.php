@@ -25,8 +25,6 @@ interface IdentifierInterface
      */
     public function getUuid(): string;
 
-    public static function make(): static;
-
     /**
      * @param string $id Any hexadecimal string, that may contain hyphen separators
      */

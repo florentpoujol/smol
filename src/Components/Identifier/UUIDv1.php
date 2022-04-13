@@ -13,8 +13,8 @@ final class UUIDv1 extends Identifier
         $time = gettimeofday();
         $time = (int) ($time['sec'] . $time['usec'] . '0'); // note here that we have a number precise to 1/10th of a microsecond
 
-        $hexTime = dechex($time + 122192928000000000);
-        // 122192928000000000 is the number of 100-ns intervals between the
+        $hexTime = dechex($time + 122_192_928_000_000_000);
+        // 122_192_928_000_000_000 is the number of 100-ns intervals between the
         // UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
         // https://github.com/symfony/polyfill-uuid/blob/main/Uuid.php
 

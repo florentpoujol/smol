@@ -72,7 +72,7 @@ $uuid = TimeBased8::fromInteger(421342637010161394);
 
 As of February 2022 the value is still small enough to be stored on a signed 8 bytes integer.
 
-Unlike UUID v1, since the timestamp's bits  are in the"regular/hi mid low" order (hte bits that changes the most are toward the end), they are indexing friendly ([without shenanigans](https://stitcher.io/blog/optimised-uuids-in-mysql#it-becomes-even-better!)) and so can be good candidate for database primary keys.
+Unlike UUID v1, since the timestamp's bits  are in the"regular/hi mid low" order (the bits that changes the most are toward the end), they are indexing friendly ([without shenanigans](https://stitcher.io/blog/optimised-uuids-in-mysql#it-becomes-even-better!)) and so can be good candidate for database primary keys.
 
 ### TimeBased16
 
@@ -85,7 +85,7 @@ $uuid->getUuid(); // ie: 05d8e8ef-ae53-daa0-dde8-fbce18cc5639
 $uuid->getHex(); // ie: 05d8e8efae53daa0dde8fbce18cc5639
 ```
 
-## Create you own
+## Create your own
 
 To create your own identifier class:
 - implements the `IdentifierInterface` interface

@@ -9,12 +9,16 @@ use UnexpectedValueException;
 abstract class Identifier implements IdentifierInterface
 {
     /** @var string A binary string */
-    private string $binary;
+    protected string $binary;
 
     abstract protected function generate(): string;
 
-    private function __construct()
+    /**
+     * @param null|string $raw A binary string
+     */
+    public function __construct(string $raw = null)
     {
+        $this->binary = $raw ?? $this->generate();
     }
 
     // --------------------------------------------------
@@ -43,17 +47,11 @@ abstract class Identifier implements IdentifierInterface
 
     public static function make(): static
     {
-        $uuid = new static();
-        $uuid->binary = $uuid->generate();
-
-        return $uuid;
+        return new static();
     }
 
     public static function fromString(string $id): static
     {
-        $instance = new static();
-        $instance->binary = hex2bin(str_replace('-', '', $id));
-
-        return $instance;
+        return new static(hex2bin(str_replace('-', '', $id)));
     }
 }

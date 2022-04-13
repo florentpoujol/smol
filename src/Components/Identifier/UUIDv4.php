@@ -9,7 +9,7 @@ namespace FlorentPoujol\Smol\Components\Identifier;
  */
 final class UUIDv4 extends Identifier
 {
-    public function generate(): string
+    protected function generate(): string
     {
         $hex = bin2hex(random_bytes(16));
         $hex[12] = '4';
